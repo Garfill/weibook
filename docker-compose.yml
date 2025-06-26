@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  mysql8:
+    image: mysql:8.4.5
+    restart: always
+    # mysql8.4 删除了插件
+    # --default-authentication-plugin=mysql_native_password
+    command: --mysql-native-password=ON
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345678
+    volumes:
+      - ./script/mysql/:/docker-entrypoint-initdb.d/
+    ports:
+      - "13306:3306"

@@ -49,6 +49,8 @@ func (u *UserHandler) Register(ctx *gin.Context) {
     return
   }
 
+  // db 操作
+
   ctx.JSON(http.StatusOK, gin.H{
     "msg": "register success",
   })

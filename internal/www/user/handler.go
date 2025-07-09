@@ -4,16 +4,20 @@ import (
   regexp "github.com/dlclark/regexp2"
   "github.com/gin-gonic/gin"
   "net/http"
+  "weibook/internal/domain"
+  "weibook/internal/service"
 )
 
 type UserHandler struct {
+  svc            *service.UserService
   passwordRegexp *regexp.Regexp
 }
 
-func NewUserHandler() *UserHandler {
+func NewUserHandler(svc *service.UserService) *UserHandler {
   const passwordExp = `^(?=.*[a-z])(?=.*[A-Z])(?=.*[\d])[a-zA-Z\d]{8,}$`
   return &UserHandler{
     passwordRegexp: regexp.MustCompile(passwordExp, 0),
+    svc:            svc,
   }
 }
 
@@ -27,6 +31,7 @@ func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 }
 
 func (u *UserHandler) Register(ctx *gin.Context) {
+  // 获取请求参数
   type ReqType struct {
     Name     string `json:"name"`
     Password string `json:"password"`
@@ -49,7 +54,15 @@ func (u *UserHandler) Register(ctx *gin.Context) {
     return
   }
 
-  // db 操作
+  // 调用service
+  err = u.svc.SignUp(ctx, domain.User{
+    Name:     req.Name,
+    Password: req.Password,
+  })
+  if err != nil {
+    ctx.JSON(http.StatusOK, gin.H{"error": "系统错误"})
+    return
+  }
 
   ctx.JSON(http.StatusOK, gin.H{
     "msg": "register success",

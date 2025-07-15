@@ -13,6 +13,19 @@ import (
 )
 
 func main() {
+  // 数据库初始化
+  db := initDB()
+  // user 初始化
+  userHandler := initUser(db)
+  //初始化gin
+  server := initServer()
+  // 注册handler
+  userHandler.RegisterRoutes(server)
+
+  server.Run(":8080")
+}
+
+func initDB() *gorm.DB {
   // 初始化mysql连接
   db, err := gorm.Open(mysql.Open("root:12345678@tcp(localhost:13306)/weibook?charset=utf8&parseTime=True&loc=Local"), &gorm.Config{})
   if err != nil {
@@ -24,12 +37,10 @@ func main() {
     panic("failed to init table")
   }
 
-  // user 初始化
-  dao := dao.NewUserDAO(db)
-  repo := repo.NewUserRepo(dao)
-  svc := service.NewUserService(repo)
-  userHandler := user.NewUserHandler(svc)
+  return db
+}
 
+func initServer() *gin.Engine {
   server := gin.Default()
 
   // cors
@@ -45,8 +56,14 @@ func main() {
     MaxAge: 12 * time.Hour,
   }))
 
-  // 注册handler
-  userHandler.RegisterRoutes(server)
+  return server
+}
 
-  server.Run(":8080")
+func initUser(db *gorm.DB) *user.UserHandler {
+  dao := dao.NewUserDAO(db)
+  repo := repo.NewUserRepo(dao)
+  svc := service.NewUserService(repo)
+  userHandler := user.NewUserHandler(svc)
+
+  return userHandler
 }

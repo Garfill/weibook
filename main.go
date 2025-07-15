@@ -19,6 +19,11 @@ func main() {
     // panic 会令整个 goroutine 结束
     panic("failed to connect database")
   }
+  err = dao.InitTable(db)
+  if err != nil {
+    panic("failed to init table")
+  }
+
   // user 初始化
   dao := dao.NewUserDAO(db)
   repo := repo.NewUserRepo(dao)

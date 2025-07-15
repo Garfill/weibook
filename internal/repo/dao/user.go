@@ -23,7 +23,7 @@ func NewUserDAO(db *gorm.DB) *UserDAO {
 // 对标数据库内部的字段
 // 别名 entity, model, PO(peristent object)
 type User struct {
-  Id       uint64
+  Id       uint64 `gorm:"primaryKey,autoIncrement"`
   Name     string
   Password string
 

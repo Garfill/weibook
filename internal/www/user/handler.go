@@ -14,7 +14,8 @@ type UserHandler struct {
 }
 
 func NewUserHandler(svc *service.UserService) *UserHandler {
-  const passwordExp = `^(?=.*[a-z])(?=.*[A-Z])(?=.*[\d])[a-zA-Z\d]{8,}$`
+  // 限制 8-50 长度的密码，防止加密算法不支持
+  const passwordExp = `^(?=.*[a-z])(?=.*[A-Z])(?=.*[\d])[~!@#$%^&a-zA-Z\d]{8,50}$`
   return &UserHandler{
     passwordRegexp: regexp.MustCompile(passwordExp, 0),
     svc:            svc,
@@ -23,8 +24,8 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
 
 func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
   group := server.Group("/user")
-  group.POST("/login", u.Login)
   group.POST("/register", u.Register)
+  group.POST("/login", u.Login)
   group.POST("/logout", u.Logout)
   group.POST("/Edit", u.Edit)
   group.GET("/profile", u.GetProfile)
@@ -39,7 +40,7 @@ func (u *UserHandler) Register(ctx *gin.Context) {
   var req ReqType
 
   if err := ctx.Bind(&req); err != nil {
-    ctx.JSON(http.StatusBadRequest, gin.H{"error": "系统解析参数错误"})
+    ctx.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误"})
     return
   }
 

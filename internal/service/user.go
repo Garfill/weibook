@@ -2,6 +2,7 @@ package service
 
 import (
   "context"
+  "golang.org/x/crypto/bcrypt"
   "weibook/internal/domain"
   "weibook/internal/repo"
 )
@@ -20,6 +21,11 @@ func (svc *UserService) SignUp(ctx context.Context, user domain.User) error {
   // 3. 实体 user 有利于分配到栈，不会内存逃逸
   // 4. 良好习惯 函数返回 error
   // 5. 这一层 考虑 数据加密 同时 执行保存操作
+  hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+  if err != nil {
+    return err
+  }
+  user.Password = string(hash)
   return svc.repo.CreateUser(ctx, user)
 
 }

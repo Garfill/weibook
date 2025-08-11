@@ -11,6 +11,7 @@ import (
   "weibook/internal/repo"
   "weibook/internal/repo/dao"
   "weibook/internal/service"
+  "weibook/internal/www/middleware"
   "weibook/internal/www/user"
 )
 
@@ -21,6 +22,9 @@ func main() {
   userHandler := initUser(db)
   //初始化gin
   server := initServer()
+
+  // session
+  initSession(server)
 
   // 注册handler
   userHandler.RegisterRoutes(server)
@@ -65,6 +69,8 @@ func initServer() *gin.Engine {
 func initSession(server *gin.Engine) {
   store := cookie.NewStore([]byte("secret"))
   server.Use(sessions.Sessions("wei_session", store))
+
+  server.Use(middleware.NewLoginMiddleBuilder().Build())
 }
 
 func initUser(db *gorm.DB) *user.UserHandler {

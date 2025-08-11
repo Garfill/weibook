@@ -3,8 +3,10 @@ package user
 import (
   "errors"
   regexp "github.com/dlclark/regexp2"
+  "github.com/gin-contrib/sessions"
   "github.com/gin-gonic/gin"
   "net/http"
+  "time"
   "weibook/internal/domain"
   "weibook/internal/service"
 )
@@ -107,7 +109,7 @@ func (u *UserHandler) Login(ctx *gin.Context) {
     ctx.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误"})
     return
   }
-  _, err = u.svc.Login(ctx, req.Email, req.Password)
+  user, err := u.svc.Login(ctx, req.Email, req.Password)
   if errors.Is(err, service.ErrInvalidUserOrPwd) {
     ctx.JSON(http.StatusNotFound, gin.H{"error": "帐号或者密码错误"})
     return
@@ -117,6 +119,11 @@ func (u *UserHandler) Login(ctx *gin.Context) {
     return
   }
   // 登录成功
+  // 取出session并设置
+  session := sessions.Default(ctx)
+  session.Set("userId", user.Id)
+  session.Set("refreshTime", time.Now().UnixMilli())
+  session.Save()
   ctx.JSON(http.StatusOK, gin.H{"msg": "登录成功"})
   return
 }

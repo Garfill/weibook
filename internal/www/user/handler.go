@@ -15,7 +15,7 @@ type UserHandler struct {
   emailRegexp    *regexp.Regexp
 }
 
-var DuplicateUserEmailErr = service.DuplicateUserEmailErr
+var ErrDuplicateUser = service.ErrDuplicateUser
 
 func NewUserHandler(svc *service.UserService) *UserHandler {
   // 限制 8-50 长度的密码，防止加密算法不支持
@@ -81,7 +81,7 @@ func (u *UserHandler) Register(ctx *gin.Context) {
   })
 
   // 返回的特定错误
-  if errors.Is(err, DuplicateUserEmailErr) {
+  if errors.Is(err, ErrDuplicateUser) {
     ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
     return
   }
@@ -96,7 +96,30 @@ func (u *UserHandler) Register(ctx *gin.Context) {
   })
 }
 
-func (u *UserHandler) Login(ctx *gin.Context) {}
+func (u *UserHandler) Login(ctx *gin.Context) {
+  type LoginReq struct {
+    Email    string `json:"email"`
+    Password string `json:"password"`
+  }
+  var req LoginReq
+  err := ctx.Bind(&req)
+  if err != nil {
+    ctx.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误"})
+    return
+  }
+  _, err = u.svc.Login(ctx, req.Email, req.Password)
+  if errors.Is(err, service.ErrInvalidUserOrPwd) {
+    ctx.JSON(http.StatusNotFound, gin.H{"error": "帐号或者密码错误"})
+    return
+  }
+  if err != nil {
+    ctx.JSON(http.StatusInternalServerError, gin.H{"error": "系统错误"})
+    return
+  }
+  // 登录成功
+  ctx.JSON(http.StatusOK, gin.H{"msg": "登录成功"})
+  return
+}
 
 func (u *UserHandler) Logout(ctx *gin.Context) {}
 

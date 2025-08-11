@@ -7,10 +7,19 @@ import (
   "gorm.io/gorm"
 )
 
-var DuplicateUserEmailErr = errors.New("邮箱冲突")
+var (
+  ErrDuplicateUser = errors.New("邮箱冲突")
+  ErrUserNotFound  = gorm.ErrRecordNotFound
+)
 
 type UserDAO struct {
   db *gorm.DB
+}
+
+func NewUserDAO(db *gorm.DB) *UserDAO {
+  return &UserDAO{
+    db: db,
+  }
 }
 
 func (dao *UserDAO) Insert(ctx context.Context, u User) error {
@@ -20,16 +29,16 @@ func (dao *UserDAO) Insert(ctx context.Context, u User) error {
   if mysqlErr, ok := err.(*mysql.MySQLError); ok {
     const uniqueConflictsErrorNo = 1062 // 唯一索引冲突
     if mysqlErr.Number == uniqueConflictsErrorNo {
-      return DuplicateUserEmailErr
+      return ErrDuplicateUser
     }
   }
   return err
 }
 
-func NewUserDAO(db *gorm.DB) *UserDAO {
-  return &UserDAO{
-    db: db,
-  }
+func (dao *UserDAO) FindByEmail(ctx context.Context, email string) (User, error) {
+  var u User
+  err := dao.db.WithContext(ctx).Where("email = ?", email).First(&u).Error
+  return u, err
 }
 
 // 对标数据库内部的字段
@@ -41,7 +50,7 @@ type User struct {
   Email    string `gorm:"index:,unique;size:100"`
 
   // 时间存 时间戳不受时区影响
-  CreaeteAt int64 `gorm:"autoCreateTime:milli"`
-  UpdateAt  int64 `gorm:"autoUpdateTime:milli"`
+  CreatedAt int64 `gorm:"autoCreateTime:milli"`
+  UpdatedAt int64 `gorm:"autoUpdateTime:milli"`
   DeletedAt int64
 }

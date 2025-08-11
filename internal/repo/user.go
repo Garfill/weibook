@@ -6,7 +6,10 @@ import (
   "weibook/internal/repo/dao"
 )
 
-var DuplicateUserEmailErr = dao.DuplicateUserEmailErr
+var (
+  ErrDuplicateUser = dao.ErrDuplicateUser
+  ErrUserNotFound  = dao.ErrUserNotFound
+)
 
 type UserRepo struct {
   dao *dao.UserDAO
@@ -24,4 +27,16 @@ func (repo *UserRepo) CreateUser(ctx context.Context, u domain.User) error {
     Password: u.Password,
     Email:    u.Email,
   })
+}
+
+func (repo *UserRepo) FindByEmail(ctx context.Context, email string) (domain.User, error) {
+  user, err := repo.dao.FindByEmail(ctx, email)
+  if err != nil {
+    return domain.User{}, err
+  }
+  return domain.User{
+    Id:       user.Id,
+    Email:    user.Email,
+    Password: user.Password,
+  }, nil
 }

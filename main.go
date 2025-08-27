@@ -1,18 +1,18 @@
 package main
 
 import (
-  "github.com/gin-contrib/cors"
-  "github.com/gin-contrib/sessions"
-  "github.com/gin-contrib/sessions/cookie"
-  "github.com/gin-gonic/gin"
-  "gorm.io/driver/mysql"
-  "gorm.io/gorm"
   "time"
   "weibook/internal/repo"
   "weibook/internal/repo/dao"
   "weibook/internal/service"
-  "weibook/internal/www/middleware"
   "weibook/internal/www/user"
+
+  "github.com/gin-contrib/cors"
+  "github.com/gin-contrib/sessions"
+  "github.com/gin-contrib/sessions/redis"
+  "github.com/gin-gonic/gin"
+  "gorm.io/driver/mysql"
+  "gorm.io/gorm"
 )
 
 func main() {
@@ -34,7 +34,7 @@ func main() {
 
 func initDB() *gorm.DB {
   // 初始化mysql连接
-  db, err := gorm.Open(mysql.Open("root:12345678@tcp(localhost:13306)/weibook?charset=utf8&parseTime=True&loc=Local"), &gorm.Config{})
+  db, err := gorm.Open(mysql.Open("root:12345678@tcp(localhost:3306)/weibook?charset=utf8&parseTime=True&loc=Local"), &gorm.Config{})
   if err != nil {
     // panic 会令整个 goroutine 结束
     panic("failed to connect database")
@@ -67,10 +67,22 @@ func initServer() *gin.Engine {
 }
 
 func initSession(server *gin.Engine) {
-  store := cookie.NewStore([]byte("secret"))
+  // V1 版本，数据设置在cookie 不安全
+  //store := cookie.NewStore([]byte("secret"))
+
+  // 信息安全：
+  //1. 身份认证key和数据加密key
+  // 2. 数据操作权限
+  // 注意这里的key要使用随机生成的，除了保存到redis还会保存到cookie，不过cookie里没有数据只有sid
+  store, _ := redis.NewStore(
+    10,
+    "tcp", "localhost:6379", "", "",
+    []byte("OEnEc62tqMFBOYRQEWQKmFWBvcpViJHV"), []byte("5H5v7Qqhct6EQBZ0DfsibYwi1J2l52xh"))
+  redis.SetKeyPrefix(store, "wei_session")
   server.Use(sessions.Sessions("wei_session", store))
 
-  server.Use(middleware.NewLoginMiddleBuilder().Build())
+  // 自定义中间件
+  //server.Use(middleware.NewLoginMiddleBuilder().Build())
 }
 
 func initUser(db *gorm.DB) *user.UserHandler {

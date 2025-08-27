@@ -2,13 +2,14 @@ package user
 
 import (
   "errors"
-  regexp "github.com/dlclark/regexp2"
-  "github.com/gin-contrib/sessions"
-  "github.com/gin-gonic/gin"
   "net/http"
   "time"
   "weibook/internal/domain"
   "weibook/internal/service"
+
+  regexp "github.com/dlclark/regexp2"
+  "github.com/gin-contrib/sessions"
+  "github.com/gin-gonic/gin"
 )
 
 type UserHandler struct {
@@ -128,18 +129,25 @@ func (u *UserHandler) Login(ctx *gin.Context) {
   return
 }
 
-func (u *UserHandler) Logout(ctx *gin.Context) {}
+func (u *UserHandler) Logout(ctx *gin.Context) {
+  // 退出登录 => 将登录失效 => 登录cookie清除
+  sess := sessions.Default(ctx)
+  // 指定多个具体选项，才能删除cookie，只是指定 maxage不行
+  sess.Options(sessions.Options{
+    MaxAge: -1,
+    Path:   "/",
+    Domain: "localhost",
+  })
+  sess.Save()
+
+  // 可以删除host的 cookie
+  //ctx.SetCookie("wei_session", "", -1, "/", "localhost", false, false)
+  ctx.JSON(http.StatusOK, gin.H{
+    "msg": "退出成功",
+  })
+  return
+}
 
 func (u *UserHandler) Edit(ctx *gin.Context) {}
 
-func (u *UserHandler) GetProfile(ctx *gin.Context) {
-  type User struct {
-    Name string `json:"name"`
-  }
-  user := User{
-    Name: "guan",
-  }
-  ctx.JSON(http.StatusOK, gin.H{
-    "user": user,
-  })
-}
+func (u *UserHandler) GetProfile(ctx *gin.Context) {}

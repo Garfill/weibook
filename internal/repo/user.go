@@ -2,6 +2,7 @@ package repo
 
 import (
   "context"
+  "errors"
   "weibook/internal/domain"
   "weibook/internal/repo/dao"
 )
@@ -37,6 +38,23 @@ func (repo *UserRepo) FindByEmail(ctx context.Context, email string) (domain.Use
   return domain.User{
     Id:       user.Id,
     Email:    user.Email,
+    Name:     user.Name,
+    Password: user.Password,
+  }, nil
+}
+
+func (repo *UserRepo) FindById(ctx context.Context, id string) (domain.User, error) {
+  user, err := repo.dao.FindById(ctx, id)
+  if errors.Is(err, ErrUserNotFound) {
+    return domain.User{}, ErrUserNotFound
+  }
+  if err != nil {
+    return domain.User{}, err
+  }
+  return domain.User{
+    Id:       user.Id,
+    Email:    user.Email,
+    Name:     user.Name,
     Password: user.Password,
   }, nil
 }

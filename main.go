@@ -5,6 +5,7 @@ import (
   "weibook/internal/repo"
   "weibook/internal/repo/dao"
   "weibook/internal/service"
+  "weibook/internal/www/middleware"
   "weibook/internal/www/user"
 
   "github.com/gin-contrib/cors"
@@ -82,7 +83,7 @@ func initSession(server *gin.Engine) {
   server.Use(sessions.Sessions("wei_session", store))
 
   // 自定义中间件
-  //server.Use(middleware.NewLoginMiddleBuilder().Build())
+  server.Use(middleware.NewLoginMiddleBuilder().Build())
 }
 
 func initUser(db *gorm.DB) *user.UserHandler {

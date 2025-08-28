@@ -3,6 +3,7 @@ package dao
 import (
   "context"
   "errors"
+
   "github.com/go-sql-driver/mysql"
   "gorm.io/gorm"
 )
@@ -41,10 +42,17 @@ func (dao *UserDAO) FindByEmail(ctx context.Context, email string) (User, error)
   return u, err
 }
 
+func (dao *UserDAO) FindById(ctx context.Context, id string) (User, error) {
+  var u User
+  //strId, _ := strconv.ParseInt(id, 10, 64)
+  err := dao.db.WithContext(ctx).Where("id = ?", id).First(&u).Error
+  return u, err
+}
+
 // 对标数据库内部的字段
 // 别名 entity, model, PO(peristent object)
 type User struct {
-  Id       uint64 `gorm:"primaryKey,autoIncrement"`
+  Id       int64  `gorm:"primaryKey,autoIncrement"`
   Name     string `gorm:"size:100;not null"`
   Password string `gorm:"size:100;not null"`
   Email    string `gorm:"index:,unique;size:100"`

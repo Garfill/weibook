@@ -3,9 +3,10 @@ package service
 import (
   "context"
   "errors"
-  "golang.org/x/crypto/bcrypt"
   "weibook/internal/domain"
   "weibook/internal/repo"
+
+  "golang.org/x/crypto/bcrypt"
 )
 
 type UserService struct {
@@ -15,6 +16,7 @@ type UserService struct {
 var (
   ErrDuplicateUser    = repo.ErrDuplicateUser
   ErrInvalidUserOrPwd = errors.New("帐号或者密码错误")
+  ErrRecordNoFound    = errors.New("没找到数据")
 )
 
 func NewUserService(repo *repo.UserRepo) *UserService {
@@ -52,6 +54,14 @@ func (svc *UserService) Login(ctx context.Context, email string, password string
   }
   // 将查找用户失败或者密码错误的error转化为同一个error返回
   return u, nil
+}
+
+func (svc *UserService) FindById(ctx context.Context, id string) (domain.User, error) {
+  user, err := svc.repo.FindById(ctx, id)
+  if errors.Is(err, repo.ErrUserNotFound) {
+    return domain.User{}, ErrRecordNoFound
+  }
+  return user, nil
 }
 
 // service 层级不定义 User，而是在 domain 层级 定义

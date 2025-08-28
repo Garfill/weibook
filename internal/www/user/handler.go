@@ -3,7 +3,6 @@ package user
 import (
   "errors"
   "net/http"
-  "time"
   "weibook/internal/domain"
   "weibook/internal/service"
 
@@ -16,17 +15,23 @@ type UserHandler struct {
   svc            *service.UserService
   passwordRegexp *regexp.Regexp
   emailRegexp    *regexp.Regexp
+  idRegexp       *regexp.Regexp
 }
 
-var ErrDuplicateUser = service.ErrDuplicateUser
+var (
+  ErrDuplicateUser = service.ErrDuplicateUser
+  ErrBadRegExp     = errors.New("内部正则错误")
+)
 
 func NewUserHandler(svc *service.UserService) *UserHandler {
   // 限制 8-50 长度的密码，防止加密算法不支持
   const passwordExp = `^(?=.*[a-z])(?=.*[A-Z])(?=.*[\d])[~!@#$%^&a-zA-Z\d]{8,50}$`
   const emailExp = `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
+  const idExp = `^[0-9]+$`
   return &UserHandler{
     passwordRegexp: regexp.MustCompile(passwordExp, 0),
     emailRegexp:    regexp.MustCompile(emailExp, 0),
+    idRegexp:       regexp.MustCompile(idExp, 0),
     svc:            svc,
   }
 }
@@ -36,7 +41,7 @@ func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
   group.POST("/register", u.Register)
   group.POST("/login", u.Login)
   group.POST("/logout", u.Logout)
-  group.POST("/Edit", u.Edit)
+  group.POST("/edit", u.Edit)
   group.GET("/profile", u.GetProfile)
 }
 
@@ -123,20 +128,21 @@ func (u *UserHandler) Login(ctx *gin.Context) {
   // 取出session并设置
   session := sessions.Default(ctx)
   session.Set("userId", user.Id)
-  session.Set("refreshTime", time.Now().UnixMilli())
   session.Save()
-  ctx.JSON(http.StatusOK, gin.H{"msg": "登录成功"})
+  ctx.JSON(http.StatusOK, gin.H{
+    "msg":     "登录成功",
+    "profile": user,
+  })
   return
 }
 
 func (u *UserHandler) Logout(ctx *gin.Context) {
   // 退出登录 => 将登录失效 => 登录cookie清除
   sess := sessions.Default(ctx)
-  // 指定多个具体选项，才能删除cookie，只是指定 maxage不行
+  // 指定和Login对应的path，才能删除cookie
   sess.Options(sessions.Options{
     MaxAge: -1,
     Path:   "/",
-    Domain: "localhost",
   })
   sess.Save()
 
@@ -150,4 +156,34 @@ func (u *UserHandler) Logout(ctx *gin.Context) {
 
 func (u *UserHandler) Edit(ctx *gin.Context) {}
 
-func (u *UserHandler) GetProfile(ctx *gin.Context) {}
+func (u *UserHandler) GetProfile(ctx *gin.Context) {
+  // 通过 id 查找用户
+  type Req struct {
+    Id string `form:"id"`
+  }
+  var req Req
+  err := ctx.Bind(&req)
+  if err != nil {
+    ctx.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误"})
+    return
+  }
+
+  ok, err := u.idRegexp.MatchString(req.Id)
+  if err != nil {
+    ctx.JSON(http.StatusInternalServerError, ErrBadRegExp)
+    return
+  }
+  if !ok {
+    ctx.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误"})
+    return
+  }
+
+  user, err := u.svc.FindById(ctx, req.Id)
+  if errors.Is(err, service.ErrRecordNoFound) {
+    ctx.JSON(http.StatusNotFound, gin.H{"error": "Not found"})
+    return
+  }
+  ctx.JSON(http.StatusOK, gin.H{
+    "profile": user,
+  })
+}

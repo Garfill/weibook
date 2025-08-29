@@ -56,7 +56,7 @@ func (dao *UserDAO) Update(ctx context.Context, user domain.User) (User, error) 
   if err != nil {
     return User{}, err
   }
-  u.Birthday = user.Birthday
+  u.Birthday = user.Birthday.UnixMilli()
   dao.db.Save(&u)
   return u, nil
 }
@@ -68,7 +68,7 @@ type User struct {
   Name     string `gorm:"size:100;not null"`
   Password string `gorm:"size:100;not null"`
   Email    string `gorm:"index:,unique;size:100"`
-  Birthday string `gorm:"size:20"`
+  Birthday int64
 
   // 时间存 时间戳不受时区影响
   CreatedAt int64 `gorm:"autoCreateTime:milli"`

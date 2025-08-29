@@ -17,6 +17,7 @@ var (
   ErrDuplicateUser    = repo.ErrDuplicateUser
   ErrInvalidUserOrPwd = errors.New("帐号或者密码错误")
   ErrRecordNoFound    = errors.New("没找到数据")
+  ErrOperateFail      = repo.ErrOperateFail
 )
 
 func NewUserService(repo *repo.UserRepo) *UserService {

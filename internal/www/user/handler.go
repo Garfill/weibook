@@ -3,6 +3,7 @@ package user
 import (
   "errors"
   "net/http"
+  "time"
   "weibook/internal/domain"
   "weibook/internal/service"
 
@@ -16,7 +17,6 @@ type UserHandler struct {
   passwordRegexp *regexp.Regexp
   emailRegexp    *regexp.Regexp
   idRegexp       *regexp.Regexp
-  dateRegexp     *regexp.Regexp
 }
 
 var (
@@ -29,12 +29,10 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
   const passwordExp = `^(?=.*[a-z])(?=.*[A-Z])(?=.*[\d])[~!@#$%^&a-zA-Z\d]{8,50}$`
   const emailExp = `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
   const idExp = `^[0-9]+$`
-  const dateExp = `^\d{4}(\-\d{2}){2}$`
   return &UserHandler{
     passwordRegexp: regexp.MustCompile(passwordExp, 0),
     emailRegexp:    regexp.MustCompile(emailExp, 0),
     idRegexp:       regexp.MustCompile(idExp, 0),
-    dateRegexp:     regexp.MustCompile(dateExp, 0),
     svc:            svc,
   }
 }
@@ -132,6 +130,7 @@ func (u *UserHandler) Login(ctx *gin.Context) {
   session := sessions.Default(ctx)
   session.Set("userId", user.Id)
   session.Save()
+
   ctx.JSON(http.StatusOK, gin.H{
     "msg":     "登录成功",
     "profile": user,
@@ -160,24 +159,37 @@ func (u *UserHandler) Logout(ctx *gin.Context) {
 func (u *UserHandler) Edit(ctx *gin.Context) {
   type Req struct {
     Birthday string `json:"birthday"`
-    Id       int64  `json:"id"`
   }
   var req Req
   if err := ctx.Bind(&req); err != nil {
     ctx.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误"})
     return
   }
-  ok, err := u.dateRegexp.MatchString(req.Birthday)
+  date, err := time.Parse(time.DateOnly, req.Birthday)
   if err != nil {
-    ctx.JSON(http.StatusInternalServerError, gin.H{"error": "内部正则错误"})
-    return
-  }
-  if !ok {
     ctx.JSON(http.StatusBadRequest, gin.H{"error": "请输入正确格式日期"})
     return
   }
-  user, _ := u.svc.UpdateProfile(ctx, domain.User{Id: req.Id, Birthday: req.Birthday})
-  ctx.JSON(http.StatusOK, gin.H{"profile": user})
+  userId := sessions.Default(ctx).Get("userId").(int64)
+  user, err := u.svc.UpdateProfile(ctx, domain.User{Birthday: date, Id: userId})
+  if errors.Is(err, service.ErrOperateFail) {
+    ctx.JSON(http.StatusInternalServerError, gin.H{"error": "更新失败"})
+    return
+  }
+  type User struct {
+    Id       int64
+    Name     string
+    Email    string
+    Birthday string
+  }
+  ctx.JSON(http.StatusOK, gin.H{
+    "profile": User{
+      Id:       user.Id,
+      Name:     user.Name,
+      Email:    user.Email,
+      Birthday: user.Birthday.Format(time.DateOnly),
+    },
+  })
   return
 }
 

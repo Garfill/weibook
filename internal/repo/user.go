@@ -3,6 +3,7 @@ package repo
 import (
   "context"
   "errors"
+  "time"
   "weibook/internal/domain"
   "weibook/internal/repo/dao"
 )
@@ -10,6 +11,7 @@ import (
 var (
   ErrDuplicateUser = dao.ErrDuplicateUser
   ErrUserNotFound  = dao.ErrUserNotFound
+  ErrOperateFail   = errors.New("操作失败")
 )
 
 type UserRepo struct {
@@ -43,28 +45,31 @@ func (repo *UserRepo) FindByEmail(ctx context.Context, email string) (domain.Use
   }, nil
 }
 
-func (repo *UserRepo) Update(ctx context.Context, profile domain.User) (domain.User, error) {
-  u, _ := repo.dao.Update(ctx, profile)
-  return domain.User{
-    Id:       u.Id,
-    Name:     u.Name,
-    Birthday: u.Birthday,
-    Email:    u.Email,
-  }, nil
-}
-
 func (repo *UserRepo) FindById(ctx context.Context, id string) (domain.User, error) {
   user, err := repo.dao.FindById(ctx, id)
   if errors.Is(err, ErrUserNotFound) {
     return domain.User{}, ErrUserNotFound
   }
   if err != nil {
-    return domain.User{}, err
+    return domain.User{}, ErrOperateFail
   }
   return domain.User{
     Id:       user.Id,
     Email:    user.Email,
     Name:     user.Name,
     Password: user.Password,
+  }, nil
+}
+
+func (repo *UserRepo) Update(ctx context.Context, profile domain.User) (domain.User, error) {
+  u, err := repo.dao.Update(ctx, profile)
+  if err != nil {
+    return domain.User{}, err
+  }
+  return domain.User{
+    Id:       u.Id,
+    Name:     u.Name,
+    Email:    u.Email,
+    Birthday: time.UnixMilli(u.Birthday),
   }, nil
 }

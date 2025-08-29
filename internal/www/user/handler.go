@@ -16,6 +16,7 @@ type UserHandler struct {
   passwordRegexp *regexp.Regexp
   emailRegexp    *regexp.Regexp
   idRegexp       *regexp.Regexp
+  dateRegexp     *regexp.Regexp
 }
 
 var (
@@ -28,10 +29,12 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
   const passwordExp = `^(?=.*[a-z])(?=.*[A-Z])(?=.*[\d])[~!@#$%^&a-zA-Z\d]{8,50}$`
   const emailExp = `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
   const idExp = `^[0-9]+$`
+  const dateExp = `^\d{4}(\-\d{2}){2}$`
   return &UserHandler{
     passwordRegexp: regexp.MustCompile(passwordExp, 0),
     emailRegexp:    regexp.MustCompile(emailExp, 0),
     idRegexp:       regexp.MustCompile(idExp, 0),
+    dateRegexp:     regexp.MustCompile(dateExp, 0),
     svc:            svc,
   }
 }
@@ -154,7 +157,29 @@ func (u *UserHandler) Logout(ctx *gin.Context) {
   return
 }
 
-func (u *UserHandler) Edit(ctx *gin.Context) {}
+func (u *UserHandler) Edit(ctx *gin.Context) {
+  type Req struct {
+    Birthday string `json:"birthday"`
+    Id       int64  `json:"id"`
+  }
+  var req Req
+  if err := ctx.Bind(&req); err != nil {
+    ctx.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误"})
+    return
+  }
+  ok, err := u.dateRegexp.MatchString(req.Birthday)
+  if err != nil {
+    ctx.JSON(http.StatusInternalServerError, gin.H{"error": "内部正则错误"})
+    return
+  }
+  if !ok {
+    ctx.JSON(http.StatusBadRequest, gin.H{"error": "请输入正确格式日期"})
+    return
+  }
+  user, _ := u.svc.UpdateProfile(ctx, domain.User{Id: req.Id, Birthday: req.Birthday})
+  ctx.JSON(http.StatusOK, gin.H{"profile": user})
+  return
+}
 
 func (u *UserHandler) GetProfile(ctx *gin.Context) {
   // 通过 id 查找用户

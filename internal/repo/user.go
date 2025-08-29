@@ -43,6 +43,16 @@ func (repo *UserRepo) FindByEmail(ctx context.Context, email string) (domain.Use
   }, nil
 }
 
+func (repo *UserRepo) Update(ctx context.Context, profile domain.User) (domain.User, error) {
+  u, _ := repo.dao.Update(ctx, profile)
+  return domain.User{
+    Id:       u.Id,
+    Name:     u.Name,
+    Birthday: u.Birthday,
+    Email:    u.Email,
+  }, nil
+}
+
 func (repo *UserRepo) FindById(ctx context.Context, id string) (domain.User, error) {
   user, err := repo.dao.FindById(ctx, id)
   if errors.Is(err, ErrUserNotFound) {

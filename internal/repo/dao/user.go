@@ -3,6 +3,8 @@ package dao
 import (
   "context"
   "errors"
+  "strconv"
+  "weibook/internal/domain"
 
   "github.com/go-sql-driver/mysql"
   "gorm.io/gorm"
@@ -44,9 +46,19 @@ func (dao *UserDAO) FindByEmail(ctx context.Context, email string) (User, error)
 
 func (dao *UserDAO) FindById(ctx context.Context, id string) (User, error) {
   var u User
-  //strId, _ := strconv.ParseInt(id, 10, 64)
   err := dao.db.WithContext(ctx).Where("id = ?", id).First(&u).Error
   return u, err
+}
+
+func (dao *UserDAO) Update(ctx context.Context, user domain.User) (User, error) {
+  strId := strconv.FormatInt(user.Id, 10)
+  u, err := dao.FindById(ctx, strId)
+  if err != nil {
+    return User{}, err
+  }
+  u.Birthday = user.Birthday
+  dao.db.Save(&u)
+  return u, nil
 }
 
 // 对标数据库内部的字段
@@ -56,6 +68,7 @@ type User struct {
   Name     string `gorm:"size:100;not null"`
   Password string `gorm:"size:100;not null"`
   Email    string `gorm:"index:,unique;size:100"`
+  Birthday string `gorm:"size:20"`
 
   // 时间存 时间戳不受时区影响
   CreatedAt int64 `gorm:"autoCreateTime:milli"`

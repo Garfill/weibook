@@ -64,5 +64,9 @@ func (svc *UserService) FindById(ctx context.Context, id string) (domain.User, e
   return user, nil
 }
 
+func (svc *UserService) UpdateProfile(ctx context.Context, profile domain.User) (domain.User, error) {
+  return svc.repo.Update(ctx, profile)
+}
+
 // service 层级不定义 User，而是在 domain 层级 定义
 // 参考面对对象编程，User 属于一个对象（这里叫领域对象）

@@ -11,6 +11,8 @@ import (
   "github.com/gin-contrib/cors"
   "github.com/gin-contrib/sessions"
   "github.com/gin-contrib/sessions/redis"
+
+  //"github.com/gin-contrib/sessions/redis"
   "github.com/gin-gonic/gin"
   "gorm.io/driver/mysql"
   "gorm.io/gorm"
@@ -75,11 +77,16 @@ func initSession(server *gin.Engine) {
   //1. 身份认证key和数据加密key
   // 2. 数据操作权限
   // 注意这里的key要使用随机生成的，除了保存到redis还会保存到cookie，不过cookie里没有数据只有sid
+
+  // redis实现 V1 多实力部署
   store, _ := redis.NewStore(
     10,
     "tcp", "localhost:6379", "", "",
     []byte("OEnEc62tqMFBOYRQEWQKmFWBvcpViJHV"), []byte("5H5v7Qqhct6EQBZ0DfsibYwi1J2l52xh"))
-  redis.SetKeyPrefix(store, "wei_session")
+  redis.SetKeyPrefix(store, "wei_session_") // redis 内 key 前缀
+
+  // memStore实现 V2 单机部署
+  //store := memstore.NewStore([]byte("OEnEc62tqMFBOYRQEWQKmFWBvcpViJHV"))
   server.Use(sessions.Sessions("wei_session", store))
 
   // 自定义中间件

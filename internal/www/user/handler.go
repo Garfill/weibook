@@ -129,6 +129,11 @@ func (u *UserHandler) Login(ctx *gin.Context) {
   // 取出session并设置
   session := sessions.Default(ctx)
   session.Set("userId", user.Id)
+  session.Options(sessions.Options{
+    MaxAge:   60,
+    Path:     "/",
+    HttpOnly: true,
+  })
   session.Save()
 
   ctx.JSON(http.StatusOK, gin.H{

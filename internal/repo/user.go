@@ -33,15 +33,16 @@ func (repo *UserRepo) CreateUser(ctx context.Context, u domain.User) error {
 }
 
 func (repo *UserRepo) FindByEmail(ctx context.Context, email string) (domain.User, error) {
-  user, err := repo.dao.FindByEmail(ctx, email)
+  u, err := repo.dao.FindByEmail(ctx, email)
   if err != nil {
     return domain.User{}, err
   }
   return domain.User{
-    Id:       user.Id,
-    Email:    user.Email,
-    Name:     user.Name,
-    Password: user.Password,
+    Id:       u.Id,
+    Email:    u.Email,
+    Name:     u.Name,
+    Password: u.Password,
+    Birthday: time.UnixMilli(u.Birthday),
   }, nil
 }
 
@@ -58,6 +59,7 @@ func (repo *UserRepo) FindById(ctx context.Context, id string) (domain.User, err
     Email:    user.Email,
     Name:     user.Name,
     Password: user.Password,
+    Birthday: time.UnixMilli(user.Birthday),
   }, nil
 }
 

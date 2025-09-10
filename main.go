@@ -55,10 +55,10 @@ func initServer() *gin.Engine {
 
   // cors
   server.Use(cors.New(cors.Config{
-    AllowOrigins:     []string{"http://localhost:3000"},
-    AllowMethods:     []string{"POST"},
-    AllowHeaders:     []string{"Origin"},
-    ExposeHeaders:    []string{"Content-Length"},
+    //AllowOrigins: []string{"http://localhost:3000"},
+    //AllowMethods:     []string{"POST", "GET"},
+    AllowHeaders:     []string{"Content-Type"},
+    ExposeHeaders:    []string{"x-jwt-token"},
     AllowCredentials: true,
     AllowOriginFunc: func(origin string) bool {
       return origin == "http://localhost:3000"
@@ -74,7 +74,7 @@ func initSession(server *gin.Engine) {
   //store := cookie.NewStore([]byte("secret"))
 
   // 信息安全：
-  //1. 身份认证key和数据加密key
+  // 1. 身份认证key和数据加密key
   // 2. 数据操作权限
   // 注意这里的key要使用随机生成的，除了保存到redis还会保存到cookie，不过cookie里没有数据只有sid
 
@@ -90,7 +90,8 @@ func initSession(server *gin.Engine) {
   server.Use(sessions.Sessions("wei_session", store))
 
   // 自定义中间件
-  server.Use(middleware.NewLoginMiddleBuilder().Build())
+  //server.Use(middleware.NewLoginMiddleBuilder().Build())
+  server.Use(middleware.NewLoginJWTMiddleBuilder().Build())
 }
 
 func initUser(db *gorm.DB) *user.UserHandler {

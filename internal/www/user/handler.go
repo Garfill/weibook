@@ -6,10 +6,12 @@ import (
   "time"
   "weibook/internal/domain"
   "weibook/internal/service"
+  "weibook/internal/variable"
 
   regexp "github.com/dlclark/regexp2"
   "github.com/gin-contrib/sessions"
   "github.com/gin-gonic/gin"
+  "github.com/golang-jwt/jwt/v5"
 )
 
 type UserHandler struct {
@@ -127,18 +129,26 @@ func (u *UserHandler) Login(ctx *gin.Context) {
   }
   // 登录成功
   // 取出session并设置
-  session := sessions.Default(ctx)
-  session.Set("userId", user.Id)
-  session.Options(sessions.Options{
-    MaxAge:   60,
-    Path:     "/",
-    HttpOnly: true,
-  })
-  session.Save()
+  //session := sessions.Default(ctx)
+  //session.Set("userId", user.Id)
+  //session.Options(sessions.Options{
+  //  MaxAge:   60,
+  //  Path:     "/",
+  //  HttpOnly: true,
+  //})
+  //session.Save()
 
+  // JWT 版本
+  token := jwt.New(jwt.SigningMethodHS256)
+  tokenStr, err := token.SignedString(variable.JWTEncryptKey)
+  if err != nil {
+    ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "系统错误"})
+    return
+  }
+  ctx.Header("x-jwt-token", tokenStr)
   ctx.JSON(http.StatusOK, gin.H{
     "msg":     "登录成功",
-    "profile": user,
+    "profile": parseUser(user),
   })
   return
 }
@@ -188,12 +198,7 @@ func (u *UserHandler) Edit(ctx *gin.Context) {
     Birthday string
   }
   ctx.JSON(http.StatusOK, gin.H{
-    "profile": User{
-      Id:       user.Id,
-      Name:     user.Name,
-      Email:    user.Email,
-      Birthday: user.Birthday.Format(time.DateOnly),
-    },
+    "profile": parseUser(user),
   })
   return
 }
@@ -225,7 +230,24 @@ func (u *UserHandler) GetProfile(ctx *gin.Context) {
     ctx.JSON(http.StatusNotFound, gin.H{"error": "Not found"})
     return
   }
+
   ctx.JSON(http.StatusOK, gin.H{
-    "profile": user,
+    "profile": parseUser(user),
   })
+}
+
+type User struct {
+  Id       int64
+  Name     string
+  Email    string
+  Birthday string
+}
+
+func parseUser(user domain.User) User {
+  return User{
+    Id:       user.Id,
+    Name:     user.Name,
+    Email:    user.Email,
+    Birthday: user.Birthday.Format(time.DateOnly),
+  }
 }

@@ -43,6 +43,8 @@ func (l *LoginMiddleWareBuilder) Build() gin.HandlerFunc {
       c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "登录失效，请重新登陆"})
       return
     }
+    // 在context存储uid，后面接口直接拿
+    c.Set("userId", uid)
     sess.Set("userId", uid)
     sess.Options(sessions.Options{
       MaxAge:   60,

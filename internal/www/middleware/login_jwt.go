@@ -4,6 +4,7 @@ import (
   "fmt"
   "net/http"
   "weibook/internal/variable"
+  "weibook/internal/www/user"
 
   "github.com/gin-gonic/gin"
   "github.com/golang-jwt/jwt/v5"
@@ -40,17 +41,21 @@ func (l *LoginJWTMiddleWareBuilder) Build() gin.HandlerFunc {
       c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "登录失效"})
       return
     }
-    token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (any, error) {
+    var userClaim user.UserClaim
+    token, err := jwt.ParseWithClaims(tokenStr, &userClaim, func(token *jwt.Token) (any, error) {
       return variable.JWTEncryptKey, nil
     })
     if err != nil {
       c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "登录失效"})
       return
     }
-    if token == nil || !token.Valid {
+    if token == nil || !token.Valid || userClaim.Uid == 0 {
       c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "登录失效"})
       return
     }
     fmt.Println("token ======", tokenStr)
+
+    // 拿到 token 内的信息 claim，通过 context 传递到接口上
+    c.Set("userInfo", userClaim)
   }
 }

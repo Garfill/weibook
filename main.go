@@ -87,6 +87,8 @@ func initSession(server *gin.Engine) {
 
   // memStore实现 V2 单机部署
   //store := memstore.NewStore([]byte("OEnEc62tqMFBOYRQEWQKmFWBvcpViJHV"))
+
+  // 注册session中间件
   server.Use(sessions.Sessions("wei_session", store))
 
   // 自定义中间件

@@ -3,6 +3,7 @@ package user
 import (
   "errors"
   "net/http"
+  "strconv"
   "time"
   "weibook/internal/domain"
   "weibook/internal/service"
@@ -45,7 +46,7 @@ func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
   group.POST("/login", u.Login)
   group.POST("/logout", u.Logout)
   group.POST("/edit", u.Edit)
-  group.GET("/profile", u.GetProfile)
+  group.GET("/profile", u.ProfileByJwt)
 }
 
 func (u *UserHandler) Register(ctx *gin.Context) {
@@ -139,7 +140,13 @@ func (u *UserHandler) Login(ctx *gin.Context) {
   //session.Save()
 
   // JWT 版本
-  token := jwt.New(jwt.SigningMethodHS256)
+  // 1. 初始化jwt，带数据，不能带入敏感数据（密码）
+  // token := jwt.New(jwt.SigningMethodHS256)
+  userClaim := UserClaim{
+    Uid: user.Id,
+  }
+  token := jwt.NewWithClaims(jwt.SigningMethodHS256, userClaim)
+  // 2. 加签，返回token字符
   tokenStr, err := token.SignedString(variable.JWTEncryptKey)
   if err != nil {
     ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "系统错误"})
@@ -203,7 +210,7 @@ func (u *UserHandler) Edit(ctx *gin.Context) {
   return
 }
 
-func (u *UserHandler) GetProfile(ctx *gin.Context) {
+func (u *UserHandler) Profile(ctx *gin.Context) {
   // 通过 id 查找用户
   type Req struct {
     Id string `form:"id"`
@@ -225,7 +232,32 @@ func (u *UserHandler) GetProfile(ctx *gin.Context) {
     return
   }
 
+  // 这里 id 也可以通过 login 中间件设置的ctx.id获取
   user, err := u.svc.FindById(ctx, req.Id)
+  if errors.Is(err, service.ErrRecordNoFound) {
+    ctx.JSON(http.StatusNotFound, gin.H{"error": "Not found"})
+    return
+  }
+
+  ctx.JSON(http.StatusOK, gin.H{
+    "profile": parseUser(user),
+  })
+}
+
+func (u *UserHandler) ProfileByJwt(ctx *gin.Context) {
+  userInfo, ok := ctx.Get("userInfo")
+  if !ok {
+    // 追踪没有存入的数据
+    ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "系统错误"})
+    return
+  }
+  uc, ok := userInfo.(UserClaim)
+  if !ok {
+    // 断言失败
+    ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "系统错误"})
+    return
+  }
+  user, err := u.svc.FindById(ctx, strconv.FormatInt(uc.Uid, 10))
   if errors.Is(err, service.ErrRecordNoFound) {
     ctx.JSON(http.StatusNotFound, gin.H{"error": "Not found"})
     return
@@ -250,4 +282,10 @@ func parseUser(user domain.User) User {
     Email:    user.Email,
     Birthday: user.Birthday.Format(time.DateOnly),
   }
+}
+
+// jwt 中 用户信息的 声明
+type UserClaim struct {
+  jwt.RegisteredClaims
+  Uid int64
 }

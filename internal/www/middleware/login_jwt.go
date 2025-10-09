@@ -1,8 +1,8 @@
 package middleware
 
 import (
-  "fmt"
   "net/http"
+  "time"
   "weibook/internal/variable"
   "weibook/internal/www/user"
 
@@ -49,11 +49,27 @@ func (l *LoginJWTMiddleWareBuilder) Build() gin.HandlerFunc {
       c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "登录失效"})
       return
     }
+    // valid 会校验过期时间
     if token == nil || !token.Valid || userClaim.Uid == 0 {
       c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "登录失效"})
       return
     }
-    fmt.Println("token ======", tokenStr)
+
+    // 刷新 jwt 过期时间
+    now := time.Now()
+    if userClaim.ExpiresAt.Sub(now) < time.Second*50 {
+      // 每 10s 刷新
+      userClaim.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Minute * 1))
+
+      // 生成新 token
+      newToken := jwt.NewWithClaims(jwt.SigningMethodHS256, userClaim)
+      newTokenStr, err := newToken.SignedString(variable.JWTEncryptKey)
+      if err != nil {
+        // 不return，日志记录失败
+        c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "token续约失败"})
+      }
+      c.Header("x-jwt-token", newTokenStr)
+    }
 
     // 拿到 token 内的信息 claim，通过 context 传递到接口上
     c.Set("userInfo", userClaim)

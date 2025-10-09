@@ -11,8 +11,6 @@ import (
   "github.com/gin-contrib/cors"
   "github.com/gin-contrib/sessions"
   "github.com/gin-contrib/sessions/redis"
-
-  //"github.com/gin-contrib/sessions/redis"
   "github.com/gin-gonic/gin"
   "gorm.io/driver/mysql"
   "gorm.io/gorm"
@@ -55,14 +53,14 @@ func initServer() *gin.Engine {
 
   // cors
   server.Use(cors.New(cors.Config{
-    //AllowOrigins: []string{"http://localhost:3000"},
+    AllowOrigins: []string{"http://localhost:3000"},
     //AllowMethods:     []string{"POST", "GET"},
     AllowHeaders:     []string{"Content-Type"},
     ExposeHeaders:    []string{"x-jwt-token"},
     AllowCredentials: true,
-    AllowOriginFunc: func(origin string) bool {
-      return origin == "http://localhost:3000"
-    },
+    //AllowOriginFunc: func(origin string) bool {
+    //  return origin == "http://localhost:3000"
+    //},
     MaxAge: 12 * time.Hour,
   }))
 

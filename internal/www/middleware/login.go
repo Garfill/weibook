@@ -45,9 +45,9 @@ func (l *LoginMiddleWareBuilder) Build() gin.HandlerFunc {
     }
     // 在context存储uid，后面接口直接拿
     c.Set("userId", uid)
-    sess.Set("userId", uid)
+    //sess.Set("userId", uid)
     sess.Options(sessions.Options{
-      MaxAge:   60,
+      MaxAge:   60 * 10,
       Path:     "/",
       HttpOnly: true,
     })
@@ -69,6 +69,7 @@ func (l *LoginMiddleWareBuilder) Build() gin.HandlerFunc {
       return
     }
     if now-lastUpdateTimeValue > 1000*5 {
+      // 每 5s 刷新一次
       sess.Set(updateTimeKey, now)
       err := sess.Save()
       if err != nil {

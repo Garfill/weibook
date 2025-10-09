@@ -46,7 +46,8 @@ func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
   group.POST("/login", u.Login)
   group.POST("/logout", u.Logout)
   group.POST("/edit", u.Edit)
-  group.GET("/profile", u.ProfileByJwt)
+  group.GET("/profile", u.Profile)
+  group.GET("/profileJwt", u.ProfileByJwt)
 }
 
 func (u *UserHandler) Register(ctx *gin.Context) {
@@ -140,19 +141,26 @@ func (u *UserHandler) Login(ctx *gin.Context) {
   //session.Save()
 
   // JWT 版本
-  // 1. 初始化jwt，带数据，不能带入敏感数据（密码）
+  // 1. 初始化jwt，带数据，不带入敏感数据（密码）
   // token := jwt.New(jwt.SigningMethodHS256)
   userClaim := UserClaim{
     Uid: user.Id,
+    RegisteredClaims: jwt.RegisteredClaims{
+      // jwt 过期时间
+      // 60s 过期
+      ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 1)),
+    },
   }
   token := jwt.NewWithClaims(jwt.SigningMethodHS256, userClaim)
   // 2. 加签，返回token字符
   tokenStr, err := token.SignedString(variable.JWTEncryptKey)
   if err != nil {
-    ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "系统错误"})
+    ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "token生成错误"})
     return
   }
   ctx.Header("x-jwt-token", tokenStr)
+
+  // 登录成功返回用户数据
   ctx.JSON(http.StatusOK, gin.H{
     "msg":     "登录成功",
     "profile": parseUser(user),

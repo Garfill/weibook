@@ -10,8 +10,12 @@ import (
 
   "github.com/gin-contrib/cors"
   "github.com/gin-contrib/sessions"
-  "github.com/gin-contrib/sessions/redis"
+  sessionRedis "github.com/gin-contrib/sessions/redis"
   "github.com/gin-gonic/gin"
+  "github.com/redis/go-redis/v9"
+  "github.com/ulule/limiter/v3"
+  limiterGin "github.com/ulule/limiter/v3/drivers/middleware/gin"
+  limiterRedis "github.com/ulule/limiter/v3/drivers/store/redis"
   "gorm.io/driver/mysql"
   "gorm.io/gorm"
 )
@@ -23,6 +27,9 @@ func main() {
   userHandler := initUser(db)
   //初始化gin
   server := initServer()
+
+  // 限流
+  initRateLimit(server)
 
   // session
   initSession(server)
@@ -77,11 +84,11 @@ func initSession(server *gin.Engine) {
   // 注意这里的key要使用随机生成的，除了保存到redis还会保存到cookie，不过cookie里没有数据只有sid
 
   // redis实现 V1 多实力部署
-  store, _ := redis.NewStore(
+  store, _ := sessionRedis.NewStore(
     10,
     "tcp", "localhost:6379", "", "",
     []byte("OEnEc62tqMFBOYRQEWQKmFWBvcpViJHV"), []byte("5H5v7Qqhct6EQBZ0DfsibYwi1J2l52xh"))
-  redis.SetKeyPrefix(store, "wei_session_") // redis 内 key 前缀
+  sessionRedis.SetKeyPrefix(store, "wei_session_") // redis 内 key 前缀
 
   // memStore实现 V2 单机部署
   //store := memstore.NewStore([]byte("OEnEc62tqMFBOYRQEWQKmFWBvcpViJHV"))
@@ -92,6 +99,25 @@ func initSession(server *gin.Engine) {
   // 自定义中间件
   //server.Use(middleware.NewLoginMiddleBuilder().Build())
   server.Use(middleware.NewLoginJWTMiddleBuilder().Build())
+}
+
+func initRateLimit(server *gin.Engine) {
+  // 限流
+  rate, err := limiter.NewRateFromFormatted("100-S")
+  if err != nil {
+    panic("Failed to initialize rate limiter")
+  }
+  client := redis.NewClient(&redis.Options{
+    Addr: "localhost:6379",
+  })
+  store, err := limiterRedis.NewStoreWithOptions(client, limiter.StoreOptions{
+    Prefix: "limiter_prefix",
+  })
+  if err != nil {
+    panic("Failed to initialize limit store")
+  }
+  mw := limiterGin.NewMiddleware(limiter.New(store, rate))
+  server.Use(mw)
 }
 
 func initUser(db *gorm.DB) *user.UserHandler {

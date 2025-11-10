@@ -150,7 +150,9 @@ func (u *UserHandler) Login(ctx *gin.Context) {
       // 60s 过期
       ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 1)),
     },
+    UserAgent: ctx.Request.UserAgent(),
   }
+
   token := jwt.NewWithClaims(jwt.SigningMethodHS256, userClaim)
   // 2. 加签，返回token字符
   tokenStr, err := token.SignedString(variable.JWTEncryptKey)
@@ -295,5 +297,6 @@ func parseUser(user domain.User) User {
 // jwt 中 用户信息的 声明
 type UserClaim struct {
   jwt.RegisteredClaims
-  Uid int64
+  Uid       int64
+  UserAgent string
 }

@@ -27,12 +27,10 @@ func main() {
   userHandler := initUser(db)
   //初始化gin
   server := initServer()
-
-  // 限流
-  initRateLimit(server)
-
   // session
   initSession(server)
+  // 限流
+  initRateLimit(server)
 
   // 注册handler
   userHandler.RegisterRoutes(server)
@@ -111,7 +109,7 @@ func initRateLimit(server *gin.Engine) {
     Addr: "localhost:6379",
   })
   store, err := limiterRedis.NewStoreWithOptions(client, limiter.StoreOptions{
-    Prefix: "limiter_prefix",
+    Prefix: "limiter_prefix_",
   })
   if err != nil {
     panic("Failed to initialize limit store")

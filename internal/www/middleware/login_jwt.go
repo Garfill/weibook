@@ -31,6 +31,7 @@ func (l *LoginJWTMiddleWareBuilder) Build() gin.HandlerFunc {
     reqPath := c.Request.URL.Path
     for _, p := range l.whitePaths {
       if reqPath == p {
+        println("reqPath === ", reqPath)
         return
       }
     }
@@ -46,6 +47,12 @@ func (l *LoginJWTMiddleWareBuilder) Build() gin.HandlerFunc {
       return variable.JWTEncryptKey, nil
     })
     if err != nil {
+      c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "登录失效"})
+      return
+    }
+    if userClaim.UserAgent != c.Request.UserAgent() {
+      // UA 变化，可能token泄漏
+      // 日志记录
       c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "登录失效"})
       return
     }

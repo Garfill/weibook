@@ -22,19 +22,24 @@ import (
 
 func main() {
   // 数据库初始化
-  db := initDB()
+  //db := initDB()
   // user 初始化
-  userHandler := initUser(db)
+  //userHandler := initUser(db)
   //初始化gin
   server := initServer()
   // session
-  initSession(server)
+  //initSession(server)
   // 限流
-  initRateLimit(server)
+  //initRateLimit(server)
 
   // 注册handler
-  userHandler.RegisterRoutes(server)
+  //userHandler.RegisterRoutes(server)
 
+  server.GET("/hello", func(context *gin.Context) {
+    context.JSON(200, gin.H{
+      "message": "world",
+    })
+  })
   server.Run(":8080")
 }
 

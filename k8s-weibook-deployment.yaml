@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weibook
+  labels:
+    app: weibook
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: weibook
+  template:
+    metadata:
+      name: weibook
+      labels:
+        app: weibook
+    spec:
+      containers:
+        - name: weibook
+          image: garfill/weibook:v0.0.1
+          ports:
+            - containerPort: 8080 # 对应 应用 流量入口端口（main函数启动端口）
+      restartPolicy: Always

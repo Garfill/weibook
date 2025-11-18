@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: weibook
+spec:
+  selector:
+    app: weibook
+  ports:
+    - protocol: TCP
+      name: http
+      port: 80
+      targetPort: 8080
+  type: LoadBalancer # 对pod 作负载均衡
+
+
+# service作为k8s流量入口，一般前端由nginx作https转发到后端http，再进入到k8s

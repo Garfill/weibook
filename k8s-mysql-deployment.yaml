@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weibook-mysql
+  labels:
+    app: weibook-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weibook-mysql
+  template:
+    metadata:
+      name: weibook-mysql
+      labels:
+        app: weibook-mysql
+    spec:
+      containers:
+        - name: weibook-mysql
+          image: mysql:8.4.5
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+#              指定mysql容器要使用pod里面哪一个volumn
+              name: mysql-storage
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "12345678"
+          ports:
+            - containerPort: 3306
+              protocol: TCP
+      restartPolicy: Always
+      volumes:
+        - name: mysql-storage
+          persistentVolumeClaim:
+            claimName: weibook-mysql-pvc
+
+      

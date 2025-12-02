@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: weibook-mysql
+spec:
+  selector:
+    app: weibook-mysql
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+      # 使用 NodePort 模式的暴露端口，port 失效
+      nodePort: 30006
+  type: NodePort
+  

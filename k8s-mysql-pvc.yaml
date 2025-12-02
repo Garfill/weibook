@@ -1,0 +1,21 @@
+# mysql 声明需要使用的持久化卷
+# 对应 k8s 所声明的pv (k8s-mysql-pv)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: weibook-mysql-pvc
+spec:
+  # 持久化声明
+  storageClassName: mysql-pvc
+  accessModes:
+#    只有一个读写(此处声明的mysql只能给一个pod使用
+    - ReadWriteOnce
+# 可以多个读，只有一个写
+#    - ReadOnlyMany
+#    读写都可多个
+#    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+
+  

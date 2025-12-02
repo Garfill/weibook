@@ -1,0 +1,17 @@
+# k8s 声明拥有的pv
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: weibook-mysql-local-pv
+  labels:
+    type: local
+spec:
+#  对应 mysql-pvc 的 storageClassName
+  storageClassName: mysql-pvc
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data"
+  

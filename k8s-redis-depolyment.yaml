@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weibook-redis
+  labels:
+    app: weibook-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weibook-redis
+  template:
+    metadata:
+      name: weibook-redis
+      labels:
+        app: weibook-redis
+    spec:
+      containers:
+        - name: weibook-redis
+          image: redis:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 6379
+              protocol: TCP
+      restartPolicy: Always
+      

@@ -10,3 +10,9 @@ weibook/
 | |-- domain/ # 各个领域
 ```
 
+# 项目打包
+k8s环境
+`
+GOOS=linux GOARCH=arm go build -tags=k8s  -o weibook .
+`
+

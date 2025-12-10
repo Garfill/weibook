@@ -9,7 +9,7 @@ spec:
     - protocol: TCP
       port: 3306
       targetPort: 3306
-      # 使用 NodePort 模式的暴露端口，port 失效
+      # 使用 NodePort 模式的暴露端口
       nodePort: 30006
   type: NodePort
   

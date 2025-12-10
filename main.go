@@ -7,6 +7,7 @@ import (
   "weibook/internal/service"
   "weibook/internal/www/middleware"
   "weibook/internal/www/user"
+  "weibook/internal/config"
 
   "github.com/gin-contrib/cors"
   "github.com/gin-contrib/sessions"
@@ -22,30 +23,31 @@ import (
 
 func main() {
   // 数据库初始化
-  //db := initDB()
+  db := initDB()
   // user 初始化
-  //userHandler := initUser(db)
+  userHandler := initUser(db)
   //初始化gin
   server := initServer()
   // session
-  //initSession(server)
+  initSession(server)
   // 限流
-  //initRateLimit(server)
+  initRateLimit(server)
 
   // 注册handler
-  //userHandler.RegisterRoutes(server)
+  userHandler.RegisterRoutes(server)
 
-  server.GET("/hello", func(context *gin.Context) {
-    context.JSON(200, gin.H{
-      "message": "world",
-    })
-  })
+  //server.GET("/hello", func(context *gin.Context) {
+  //  context.JSON(200, gin.H{
+  //    "message": "world",
+  //  })
+  //})
   server.Run(":8080")
+  println("main ==========")
 }
 
 func initDB() *gorm.DB {
   // 初始化mysql连接
-  db, err := gorm.Open(mysql.Open("root:12345678@tcp(localhost:3306)/weibook?charset=utf8&parseTime=True&loc=Local"), &gorm.Config{})
+  db, err := gorm.Open(mysql.Open(config.Config.Mysql.DSN), &gorm.Config{})
   if err != nil {
     // panic 会令整个 goroutine 结束
     panic("failed to connect database")
@@ -89,7 +91,7 @@ func initSession(server *gin.Engine) {
   // redis实现 V1 多实力部署
   store, _ := sessionRedis.NewStore(
     10,
-    "tcp", "localhost:6379", "", "",
+    "tcp", config.Config.Redis.Addr, "", "",
     []byte("OEnEc62tqMFBOYRQEWQKmFWBvcpViJHV"), []byte("5H5v7Qqhct6EQBZ0DfsibYwi1J2l52xh"))
   sessionRedis.SetKeyPrefix(store, "wei_session_") // redis 内 key 前缀
 
@@ -111,7 +113,7 @@ func initRateLimit(server *gin.Engine) {
     panic("Failed to initialize rate limiter")
   }
   client := redis.NewClient(&redis.Options{
-    Addr: "localhost:6379",
+    Addr: config.Config.Redis.Addr,
   })
   store, err := limiterRedis.NewStoreWithOptions(client, limiter.StoreOptions{
     Prefix: "limiter_prefix_",

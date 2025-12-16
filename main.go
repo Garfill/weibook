@@ -2,12 +2,12 @@ package main
 
 import (
   "time"
+  "weibook/internal/config"
   "weibook/internal/repo"
   "weibook/internal/repo/dao"
   "weibook/internal/service"
   "weibook/internal/www/middleware"
   "weibook/internal/www/user"
-  "weibook/internal/config"
 
   "github.com/gin-contrib/cors"
   "github.com/gin-contrib/sessions"
@@ -67,7 +67,8 @@ func initServer() *gin.Engine {
   server.Use(cors.New(cors.Config{
     AllowOrigins: []string{"http://localhost:3000"},
     //AllowMethods:     []string{"POST", "GET"},
-    AllowHeaders:     []string{"Content-Type"},
+    // x-token 是前端请求携带的token字段
+    AllowHeaders:     []string{"Content-Type", "x-token"},
     ExposeHeaders:    []string{"x-jwt-token"},
     AllowCredentials: true,
     //AllowOriginFunc: func(origin string) bool {
@@ -88,14 +89,14 @@ func initSession(server *gin.Engine) {
   // 2. 数据操作权限
   // 注意这里的key要使用随机生成的，除了保存到redis还会保存到cookie，不过cookie里没有数据只有sid
 
-  // redis实现 V1 多实力部署
+  // redis实现 V1 多实例部署
   store, _ := sessionRedis.NewStore(
     10,
     "tcp", config.Config.Redis.Addr, "", "",
     []byte("OEnEc62tqMFBOYRQEWQKmFWBvcpViJHV"), []byte("5H5v7Qqhct6EQBZ0DfsibYwi1J2l52xh"))
   sessionRedis.SetKeyPrefix(store, "wei_session_") // redis 内 key 前缀
 
-  // memStore实现 V2 单机部署
+  // memStore实现 V2 单机部署，基于内存的实现
   //store := memstore.NewStore([]byte("OEnEc62tqMFBOYRQEWQKmFWBvcpViJHV"))
 
   // 注册session中间件

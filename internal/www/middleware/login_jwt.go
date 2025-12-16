@@ -36,7 +36,7 @@ func (l *LoginJWTMiddleWareBuilder) Build() gin.HandlerFunc {
       }
     }
     // 使用jwt 校验
-    tokenStr := c.GetHeader("x-jwt-token")
+    tokenStr := c.GetHeader("x-token")
     if tokenStr == "" {
       // 没token 就是没登录
       c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "登录失效"})

@@ -147,8 +147,8 @@ func (u *UserHandler) Login(ctx *gin.Context) {
     Uid: user.Id,
     RegisteredClaims: jwt.RegisteredClaims{
       // jwt 过期时间
-      // 60s 过期
-      ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 1)),
+      // 60m 过期
+      ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 60)),
     },
     UserAgent: ctx.Request.UserAgent(),
   }

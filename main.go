@@ -4,6 +4,7 @@ import (
   "time"
   "weibook/internal/config"
   "weibook/internal/repo"
+  "weibook/internal/repo/cache"
   "weibook/internal/repo/dao"
   "weibook/internal/service"
   "weibook/internal/www/middleware"
@@ -67,8 +68,8 @@ func initServer() *gin.Engine {
   server.Use(cors.New(cors.Config{
     AllowOrigins: []string{"http://localhost:3000"},
     //AllowMethods:     []string{"POST", "GET"},
-    // x-token 是前端请求携带的token字段
-    AllowHeaders:     []string{"Content-Type", "x-token"},
+    // x-jwt-token 是前端请求携带的token字段
+    AllowHeaders:     []string{"Content-Type", "x-jwt-token"},
     ExposeHeaders:    []string{"x-jwt-token"},
     AllowCredentials: true,
     //AllowOriginFunc: func(origin string) bool {
@@ -128,7 +129,11 @@ func initRateLimit(server *gin.Engine) {
 
 func initUser(db *gorm.DB) *user.UserHandler {
   dao := dao.NewUserDAO(db)
-  repo := repo.NewUserRepo(dao)
+  redisClient := redis.NewClient(&redis.Options{
+    Addr:     "localhost:6379",
+    Password: "",
+  })
+  repo := repo.NewUserRepo(dao, cache.NewUserCache(redisClient))
   svc := service.NewUserService(repo)
   userHandler := user.NewUserHandler(svc)
 

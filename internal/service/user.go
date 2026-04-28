@@ -57,7 +57,7 @@ func (svc *UserService) Login(ctx context.Context, email string, password string
   return u, nil
 }
 
-func (svc *UserService) FindById(ctx context.Context, id string) (domain.User, error) {
+func (svc *UserService) FindById(ctx context.Context, id int64) (domain.User, error) {
   user, err := svc.repo.FindById(ctx, id)
   if errors.Is(err, repo.ErrUserNotFound) {
     return domain.User{}, ErrRecordNoFound

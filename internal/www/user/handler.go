@@ -220,10 +220,11 @@ func (u *UserHandler) Edit(ctx *gin.Context) {
   return
 }
 
+// session 版本
 func (u *UserHandler) Profile(ctx *gin.Context) {
   // 通过 id 查找用户
   type Req struct {
-    Id string `form:"id"`
+    Id int64 `form:"id"`
   }
   var req Req
   err := ctx.Bind(&req)
@@ -232,7 +233,8 @@ func (u *UserHandler) Profile(ctx *gin.Context) {
     return
   }
 
-  ok, err := u.idRegexp.MatchString(req.Id)
+  id := strconv.FormatInt(req.Id, 10)
+  ok, err := u.idRegexp.MatchString(id)
   if err != nil {
     ctx.JSON(http.StatusInternalServerError, ErrBadRegExp)
     return
@@ -254,6 +256,7 @@ func (u *UserHandler) Profile(ctx *gin.Context) {
   })
 }
 
+// jwt 版本
 func (u *UserHandler) ProfileByJwt(ctx *gin.Context) {
   userInfo, ok := ctx.Get("userInfo")
   if !ok {
@@ -267,7 +270,7 @@ func (u *UserHandler) ProfileByJwt(ctx *gin.Context) {
     ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "系统错误"})
     return
   }
-  user, err := u.svc.FindById(ctx, strconv.FormatInt(uc.Uid, 10))
+  user, err := u.svc.FindById(ctx, uc.Uid)
   if errors.Is(err, service.ErrRecordNoFound) {
     ctx.JSON(http.StatusNotFound, gin.H{"error": "Not found"})
     return

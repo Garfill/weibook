@@ -3,7 +3,6 @@ package dao
 import (
   "context"
   "errors"
-  "strconv"
   "weibook/internal/domain"
 
   "github.com/go-sql-driver/mysql"
@@ -44,15 +43,14 @@ func (dao *UserDAO) FindByEmail(ctx context.Context, email string) (User, error)
   return u, err
 }
 
-func (dao *UserDAO) FindById(ctx context.Context, id string) (User, error) {
+func (dao *UserDAO) FindById(ctx context.Context, id int64) (User, error) {
   var u User
   err := dao.db.WithContext(ctx).Where("id = ?", id).First(&u).Error
   return u, err
 }
 
 func (dao *UserDAO) Update(ctx context.Context, user domain.User) (User, error) {
-  strId := strconv.FormatInt(user.Id, 10)
-  u, err := dao.FindById(ctx, strId)
+  u, err := dao.FindById(ctx, user.Id)
   if err != nil {
     return User{}, err
   }

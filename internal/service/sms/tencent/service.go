@@ -13,6 +13,7 @@ type Service struct {
   client   *tSms.Client
 }
 
+// 后期通过 test 单元测试
 func (s *Service) Send(ctx context.Context, tpl string, args []string, numbers ...string) error {
   req := tSms.NewSendSmsRequest()
   req.SmsSdkAppId = s.appId

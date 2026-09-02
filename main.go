@@ -7,6 +7,7 @@ import (
   "weibook/internal/repo/cache"
   "weibook/internal/repo/dao"
   "weibook/internal/service"
+  "weibook/internal/service/sms/memory"
   "weibook/internal/www/middleware"
   "weibook/internal/www/user"
 
@@ -133,9 +134,14 @@ func initUser(db *gorm.DB) *user.UserHandler {
     Addr:     "localhost:6379",
     Password: "",
   })
-  repo := repo.NewUserRepo(dao, cache.NewUserCache(redisClient))
-  svc := service.NewUserService(repo)
-  userHandler := user.NewUserHandler(svc)
+  r := repo.NewUserRepo(dao, cache.NewUserCache(redisClient))
+  svc := service.NewUserService(r)
+
+  codeCache := cache.NewCodeCache(redisClient)
+  codeRepo := repo.NewCodeRepo(codeCache)
+  smsService := memory.NewMemorySms()
+  codeSvc := service.NewCodeService(codeRepo, smsService)
+  userHandler := user.NewUserHandler(svc, codeSvc)
 
   return userHandler
 }

@@ -2,6 +2,7 @@ package user
 
 import (
   "errors"
+  "fmt"
   "net/http"
   "strconv"
   "time"
@@ -17,9 +18,11 @@ import (
 
 type UserHandler struct {
   svc            *service.UserService
+  codeSvc        *service.CodeService
   passwordRegexp *regexp.Regexp
   emailRegexp    *regexp.Regexp
   idRegexp       *regexp.Regexp
+  phoneExp       *regexp.Regexp
 }
 
 var (
@@ -27,16 +30,19 @@ var (
   ErrBadRegExp     = errors.New("内部正则错误")
 )
 
-func NewUserHandler(svc *service.UserService) *UserHandler {
+func NewUserHandler(svc *service.UserService, codeSvc *service.CodeService) *UserHandler {
   // 限制 8-50 长度的密码，防止加密算法不支持
   const passwordExp = `^(?=.*[a-z])(?=.*[A-Z])(?=.*[\d])[~!@#$%^&a-zA-Z\d]{8,50}$`
   const emailExp = `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
   const idExp = `^[0-9]+$`
+  const phoneExp = `^1\d{10}`
   return &UserHandler{
     passwordRegexp: regexp.MustCompile(passwordExp, 0),
     emailRegexp:    regexp.MustCompile(emailExp, 0),
     idRegexp:       regexp.MustCompile(idExp, 0),
+    phoneExp:       regexp.MustCompile(phoneExp, 0),
     svc:            svc,
+    codeSvc:        codeSvc,
   }
 }
 
@@ -48,6 +54,8 @@ func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
   group.POST("/edit", u.Edit)
   group.GET("/profile", u.Profile)
   group.GET("/profileJwt", u.ProfileByJwt)
+  group.POST("/sms/login/code", u.SendLoginSMSCode)
+  group.POST("/sms/login/verify", u.VerifyLoginSMSCode)
 }
 
 func (u *UserHandler) Register(ctx *gin.Context) {
@@ -279,6 +287,71 @@ func (u *UserHandler) ProfileByJwt(ctx *gin.Context) {
   ctx.JSON(http.StatusOK, gin.H{
     "profile": parseUser(user),
   })
+}
+
+func (u *UserHandler) SendLoginSMSCode(ctx *gin.Context) {
+  const biz = "login"
+  type Req struct {
+    Phone string `json:"phone"`
+  }
+  var req Req
+  if err := ctx.ShouldBindJSON(&req); err != nil {
+    ctx.JSON(http.StatusBadRequest, gin.H{
+      "error": "请输入正确的手机号",
+    })
+    return
+  }
+  ok, err := u.phoneExp.MatchString(req.Phone)
+  if err != nil {
+    ctx.JSON(http.StatusInternalServerError, gin.H{"error": "系统内部错误"})
+    return
+  }
+  if !ok {
+    ctx.JSON(http.StatusBadRequest, gin.H{"error": "请输入正确的手机号"})
+    return
+  }
+  err = u.codeSvc.Send(ctx, biz, req.Phone)
+  if err != nil {
+    ctx.JSON(http.StatusOK,
+      gin.H{
+        "error": "系统异常",
+      })
+    return
+  }
+  ctx.JSON(http.StatusOK, gin.H{
+    "code": "Success",
+  })
+}
+
+func (u *UserHandler) VerifyLoginSMSCode(ctx *gin.Context) {
+  const biz = "login"
+  type Req struct {
+    Phone string `json:"phone"`
+    Code  string `json:"code"`
+  }
+  var req Req
+  if err := ctx.ShouldBind(&req); err != nil {
+    ctx.JSON(http.StatusBadRequest, gin.H{
+      "error": "请输入正确的手机号/验证码",
+    })
+    return
+  }
+  valid, err := u.codeSvc.Verify(ctx, biz, req.Code, req.Phone)
+  if err != nil {
+    ctx.JSON(http.StatusOK,
+      gin.H{
+        "error": "系统异常",
+      })
+    return
+  }
+  if !valid {
+    ctx.JSON(http.StatusBadRequest, gin.H{
+      "error": "请输入正确的手机号/验证码",
+    })
+    return
+  }
+  // 验证码登录
+  fmt.Println("sms login=====", req.Phone)
 }
 
 type User struct {

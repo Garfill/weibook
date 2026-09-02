@@ -58,6 +58,8 @@ func (c *CodeCache) Verify(ctx context.Context, biz, phone, code string) (bool, 
   case -2:
     // 减少一次校验次数
     return false, nil
+  default:
+    return false, nil
   }
 }
 

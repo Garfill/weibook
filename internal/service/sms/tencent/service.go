@@ -41,7 +41,7 @@ func (s *Service) toStringPtrSlice(src []string) []*string {
   return ptr
 }
 
-func NewService(client *tSms.Client, appId string, signName string) *Service {
+func NewTencentService(client *tSms.Client, appId string, signName string) *Service {
   return &Service{
     appId:    &appId,
     signName: &signName,

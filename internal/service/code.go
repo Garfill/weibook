@@ -24,7 +24,7 @@ import (
 // 2. redis内使用lua脚本：redis是单线程
 
 type CodeService struct {
-  repo repo.CodeRepo
+  repo *repo.CodeRepo
   sms  sms.Service
 }
 
@@ -36,6 +36,7 @@ func (svc *CodeService) Send(
 ) error {
   //  1. 生成验证码
   code := svc.generateCode()
+  fmt.Println("code ======", code)
   //  2. 存储到redis
   err := svc.repo.Store(ctx, biz, phone, code)
   if err != nil {
@@ -67,4 +68,11 @@ func (svc *CodeService) generateCode() string {
   num := rand.Intn(1000000)
   // 不够6位数的前面补充0
   return fmt.Sprintf("%6d", num)
+}
+
+func NewCodeService(repo *repo.CodeRepo, sms sms.Service) *CodeService {
+  return &CodeService{
+    repo: repo,
+    sms:  sms,
+  }
 }

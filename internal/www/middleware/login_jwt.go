@@ -16,7 +16,7 @@ type LoginJWTMiddleWareBuilder struct {
 
 func NewLoginJWTMiddleBuilder() *LoginJWTMiddleWareBuilder {
   return &LoginJWTMiddleWareBuilder{
-    whitePaths: []string{"/user/login", "/user/register"},
+    whitePaths: []string{"/user/login", "/user/register", "/user/sms/login/code", "/user/sms/login/verify"},
   }
 }
 

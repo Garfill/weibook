@@ -10,10 +10,11 @@ if cnt <= 0 then
     return -1
 elseif val == code then
      -- 输入正确
+     -- 设置验证码失效
      redis.call("set", cntKey, -1)
      return 0
 else
      -- 用户输入错误,次数-1
-     redis.call("decr", cntKey, -1)
+     redis.call("decr", cntKey)
      return -2
 end

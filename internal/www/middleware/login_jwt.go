@@ -2,6 +2,7 @@ package middleware
 
 import (
   "net/http"
+  "strings"
   "time"
   "weibook/internal/variable"
   "weibook/internal/www/user"
@@ -36,12 +37,15 @@ func (l *LoginJWTMiddleWareBuilder) Build() gin.HandlerFunc {
       }
     }
     // 使用jwt 校验
-    tokenStr := c.GetHeader("x-jwt-token")
-    if tokenStr == "" {
+    // Bearer xxxxx
+    authCode := c.GetHeader("Authorization")
+    if authCode == "" {
       // 没token 就是没登录
       c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "登录失效"})
       return
     }
+    segs := strings.Split(authCode, " ")
+    tokenStr := segs[1]
     var userClaim user.UserClaim
     token, err := jwt.ParseWithClaims(tokenStr, &userClaim, func(token *jwt.Token) (any, error) {
       return variable.JWTEncryptKey, nil

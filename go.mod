@@ -1,6 +1,6 @@
 module weibook
 
-go 1.24.4
+go 1.25.0
 
 require (
 	github.com/dlclark/regexp2 v1.11.5
@@ -28,6 +28,7 @@ require (
 	github.com/quic-go/quic-go v0.58.0 // indirect
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.108 // indirect
 	go.uber.org/mock v0.6.0 // indirect
+	gorm.io/plugin/soft_delete v1.2.1 // indirect
 )
 
 require (
@@ -57,8 +58,8 @@ require (
 	golang.org/x/crypto v0.46.0
 	golang.org/x/net v0.48.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
-	golang.org/x/text v0.32.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gorm.io/driver/mysql v1.6.0
-	gorm.io/gorm v1.31.1
+	gorm.io/gorm v1.31.2
 )

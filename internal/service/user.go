@@ -65,6 +65,28 @@ func (svc *UserService) FindById(ctx context.Context, id int64) (domain.User, er
   return user, nil
 }
 
+func (svc *UserService) FindOrCreate(ctx context.Context, phone string) (domain.User, error) {
+  // 手机号没找到用户
+  u, err := svc.repo.FindByPhone(ctx, phone)
+  if err != repo.ErrUserNotFound {
+    // err = nil
+    // err = 其他错误
+    return u, err
+  }
+  // 没对应手机号用户
+  u = domain.User{
+    Phone: phone,
+  }
+  err = svc.repo.CreateUser(ctx, u)
+  if err != nil {
+    // 创建失败
+    return domain.User{}, err
+  }
+  // 创建后重新查找库里面的数据
+  // tips 有可能遇到主从延迟问题，如果遇到，createUser 返回新生成的id（int64）
+  return svc.repo.FindByPhone(ctx, phone)
+}
+
 func (svc *UserService) UpdateProfile(ctx context.Context, profile domain.User) (domain.User, error) {
   return svc.repo.Update(ctx, profile)
 }

@@ -8,6 +8,11 @@ import (
   "weibook/internal/service/sms"
 )
 
+var (
+  ErrCodeVerifyTooMany = repo.ErrVerifyTooMany
+  ErrCodeSendTooMany   = repo.ErrSendTooMany
+)
+
 // 假设验证码存在 10 分钟 有效期，存 redis
 // redisKey = phone_code:$biz:$phone
 // 1. redis 没有这个key，直接发送
@@ -67,7 +72,7 @@ func (svc *CodeService) generateCode() string {
   // 0 - 999999随机
   num := rand.Intn(1000000)
   // 不够6位数的前面补充0
-  return fmt.Sprintf("%6d", num)
+  return fmt.Sprintf("%06d", num)
 }
 
 func NewCodeService(repo *repo.CodeRepo, sms sms.Service) *CodeService {

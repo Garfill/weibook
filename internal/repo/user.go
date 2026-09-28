@@ -2,6 +2,7 @@ package repo
 
 import (
   "context"
+  "database/sql"
   "errors"
   "time"
   "weibook/internal/domain"
@@ -28,25 +29,23 @@ func NewUserRepo(dao *dao.UserDAO, ca *cache.UserCache) *UserRepo {
 }
 
 func (repo *UserRepo) CreateUser(ctx context.Context, u domain.User) error {
-  return repo.dao.Insert(ctx, dao.User{
-    Name:     u.Name,
-    Password: u.Password,
-    Email:    u.Email,
-  })
+  return repo.dao.Insert(ctx, repo.domainToEntity(u))
 }
 
 func (repo *UserRepo) FindByEmail(ctx context.Context, email string) (domain.User, error) {
   u, err := repo.dao.FindByEmail(ctx, email)
-  if err != nil {
-    return domain.User{}, err
+  if errors.Is(err, ErrUserNotFound) {
+    return domain.User{}, ErrUserNotFound
   }
-  return domain.User{
-    Id:       u.Id,
-    Email:    u.Email,
-    Name:     u.Name,
-    Password: u.Password,
-    Birthday: time.UnixMilli(u.Birthday),
-  }, nil
+  return repo.entityToDomain(u), nil
+}
+
+func (repo *UserRepo) FindByPhone(ctx context.Context, phone string) (domain.User, error) {
+  u, err := repo.dao.FindByPhone(ctx, phone)
+  if errors.Is(err, ErrUserNotFound) {
+    return domain.User{}, ErrUserNotFound
+  }
+  return repo.entityToDomain(u), nil
 }
 
 func (repo *UserRepo) FindById(ctx context.Context, id int64) (domain.User, error) {
@@ -58,7 +57,7 @@ func (repo *UserRepo) FindById(ctx context.Context, id int64) (domain.User, erro
     return user, err
   }
   if err == cache.ErrUserNotFound {
-    //  缓存没数据
+    // 缓存没数据
     // 2. 从数据库查找
     ue, err := repo.dao.FindById(ctx, id)
     if errors.Is(err, ErrUserNotFound) {
@@ -67,13 +66,7 @@ func (repo *UserRepo) FindById(ctx context.Context, id int64) (domain.User, erro
     if err != nil {
       return domain.User{}, ErrOperateFail
     }
-    user = domain.User{
-      Id:       ue.Id,
-      Email:    ue.Email,
-      Name:     ue.Name,
-      Password: ue.Password,
-      Birthday: time.UnixMilli(ue.Birthday),
-    }
+    user = repo.entityToDomain(ue)
     go func() {
       //  设置缓存数据
       err = repo.cache.Set(ctx, user)
@@ -97,10 +90,34 @@ func (repo *UserRepo) Update(ctx context.Context, profile domain.User) (domain.U
   if err != nil {
     return domain.User{}, err
   }
+  return repo.entityToDomain(u), nil
+}
+
+// dao和 domain 的 email/phone 类型不一致，转换函数
+func (repo *UserRepo) domainToEntity(u domain.User) dao.User {
+  return dao.User{
+    Id:   u.Id,
+    Name: u.Name,
+    Email: sql.NullString{
+      String: u.Email,
+      Valid:  u.Email != "",
+    },
+    Phone: sql.NullString{
+      String: u.Phone,
+      Valid:  u.Phone != "",
+    },
+    Password: u.Password,
+    Birthday: u.Birthday.UnixMilli(),
+  }
+}
+
+func (repo *UserRepo) entityToDomain(ud dao.User) domain.User {
   return domain.User{
-    Id:       u.Id,
-    Name:     u.Name,
-    Email:    u.Email,
-    Birthday: time.UnixMilli(u.Birthday),
-  }, nil
+    Id:       ud.Id,
+    Name:     ud.Name,
+    Email:    ud.Email.String,
+    Phone:    ud.Phone.String,
+    Password: ud.Password,
+    Birthday: time.UnixMilli(ud.Birthday),
+  }
 }

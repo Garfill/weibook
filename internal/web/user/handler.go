@@ -1,4 +1,4 @@
-package user
+package web
 
 import (
   "errors"
@@ -9,7 +9,7 @@ import (
   "weibook/internal/domain"
   "weibook/internal/service"
   "weibook/internal/variable"
-  "weibook/internal/www"
+  "weibook/internal/web"
 
   regexp "github.com/dlclark/regexp2"
   "github.com/gin-contrib/sessions"

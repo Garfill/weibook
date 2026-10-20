@@ -1,17 +1,8 @@
 package main
 
 import (
-  "time"
   "weibook/internal/config"
-  "weibook/internal/repo"
-  "weibook/internal/repo/cache"
-  "weibook/internal/repo/dao"
-  "weibook/internal/service"
-  "weibook/internal/service/sms/memory"
-  "weibook/internal/www/middleware"
-  "weibook/internal/www/user"
 
-  "github.com/gin-contrib/cors"
   "github.com/gin-contrib/sessions"
   sessionRedis "github.com/gin-contrib/sessions/redis"
   "github.com/gin-gonic/gin"
@@ -19,24 +10,14 @@ import (
   "github.com/ulule/limiter/v3"
   limiterGin "github.com/ulule/limiter/v3/drivers/middleware/gin"
   limiterRedis "github.com/ulule/limiter/v3/drivers/store/redis"
-  "gorm.io/driver/mysql"
-  "gorm.io/gorm"
 )
 
 func main() {
-  // 数据库初始化
-  db := initDB()
-  // user 初始化
-  userHandler := initUser(db)
   //初始化gin
-  server := initServer()
+  server := InitializeApp()
   // session
   initSession(server)
-  // 限流
   initRateLimit(server)
-
-  // 注册handler
-  userHandler.RegisterRoutes(server)
 
   //server.GET("/hello", func(context *gin.Context) {
   //  context.JSON(200, gin.H{
@@ -45,41 +26,6 @@ func main() {
   //})
   server.Run(":8080")
   println("main ==========")
-}
-
-func initDB() *gorm.DB {
-  // 初始化mysql连接
-  db, err := gorm.Open(mysql.Open(config.Config.Mysql.DSN), &gorm.Config{})
-  if err != nil {
-    // panic 会令整个 goroutine 结束
-    panic("failed to connect database")
-  }
-  err = dao.InitTable(db)
-  if err != nil {
-    panic("failed to init table")
-  }
-
-  return db
-}
-
-func initServer() *gin.Engine {
-  server := gin.Default()
-
-  // cors
-  server.Use(cors.New(cors.Config{
-    AllowOrigins: []string{"http://localhost:3000"},
-    //AllowMethods:     []string{"POST", "GET"},
-    // x-jwt-token 是前端请求携带的token字段
-    AllowHeaders:     []string{"Content-Type", "x-jwt-token"},
-    ExposeHeaders:    []string{"x-jwt-token"},
-    AllowCredentials: true,
-    //AllowOriginFunc: func(origin string) bool {
-    //  return origin == "http://localhost:3000"
-    //},
-    MaxAge: 12 * time.Hour,
-  }))
-
-  return server
 }
 
 func initSession(server *gin.Engine) {
@@ -102,11 +48,11 @@ func initSession(server *gin.Engine) {
   //store := memstore.NewStore([]byte("OEnEc62tqMFBOYRQEWQKmFWBvcpViJHV"))
 
   // 注册session中间件
-  server.Use(sessions.Sessions("wei_session", store))
+  server.Use(sessions.Sessions("weibook_session", store))
 
   // 自定义中间件
   //server.Use(middleware.NewLoginMiddleBuilder().Build())
-  server.Use(middleware.NewLoginJWTMiddleBuilder().Build())
+  //server.Use(middleware.NewLoginJWTMiddleBuilder().Build())
 }
 
 func initRateLimit(server *gin.Engine) {
@@ -126,22 +72,4 @@ func initRateLimit(server *gin.Engine) {
   }
   mw := limiterGin.NewMiddleware(limiter.New(store, rate))
   server.Use(mw)
-}
-
-func initUser(db *gorm.DB) *user.UserHandler {
-  dao := dao.NewUserDAO(db)
-  redisClient := redis.NewClient(&redis.Options{
-    Addr:     "localhost:6379",
-    Password: "",
-  })
-  r := repo.NewUserRepo(dao, cache.NewUserCache(redisClient))
-  svc := service.NewUserService(r)
-
-  codeCache := cache.NewCodeCache(redisClient)
-  codeRepo := repo.NewCodeRepo(codeCache)
-  smsService := memory.NewMemorySms()
-  codeSvc := service.NewCodeService(codeRepo, smsService)
-  userHandler := user.NewUserHandler(svc, codeSvc)
-
-  return userHandler
 }

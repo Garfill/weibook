@@ -12,7 +12,7 @@ import (
 )
 
 var (
-  ErrDuplicateUser = errors.New("邮箱冲突")
+  ErrDuplicateUser = errors.New("手机/邮箱冲突")
   ErrUserNotFound  = gorm.ErrRecordNotFound
 )
 
@@ -39,7 +39,8 @@ func (dao *UserDAO) Insert(ctx context.Context, u User) error {
 
   if err != nil {
     var mysqlErr *mysql.MySQLError
-    if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
+    const uniqueConflictsErrNo = 1062
+    if errors.As(err, &mysqlErr) && mysqlErr.Number == uniqueConflictsErrNo {
       // 唯一索引冲突
       return ErrDuplicateUser
     }

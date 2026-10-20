@@ -65,6 +65,9 @@ func (svc *UserService) FindById(ctx context.Context, id int64) (domain.User, er
   return user, nil
 }
 
+// 1. 查询手机
+// 2. 否则注册用户，成功则返回
+// 3. 否则（遇到并发问题），查询返回
 func (svc *UserService) FindOrCreate(ctx context.Context, phone string) (domain.User, error) {
   // 手机号没找到用户
   u, err := svc.repo.FindByPhone(ctx, phone)
@@ -78,8 +81,8 @@ func (svc *UserService) FindOrCreate(ctx context.Context, phone string) (domain.
     Phone: phone,
   }
   err = svc.repo.CreateUser(ctx, u)
-  if err != nil {
-    // 创建失败
+  if err != nil && err != repo.ErrDuplicateUser {
+    // 创建失败，但是不是手机冲突，属于系统错误
     return domain.User{}, err
   }
   // 创建后重新查找库里面的数据

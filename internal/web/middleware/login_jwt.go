@@ -5,7 +5,7 @@ import (
   "strings"
   "time"
   "weibook/internal/variable"
-  "weibook/internal/www/user"
+  web "weibook/internal/web/user"
 
   "github.com/gin-gonic/gin"
   "github.com/golang-jwt/jwt/v5"
@@ -46,7 +46,7 @@ func (l *LoginJWTMiddleWareBuilder) Build() gin.HandlerFunc {
     }
     segs := strings.Split(authCode, " ")
     tokenStr := segs[1]
-    var userClaim user.UserClaim
+    var userClaim web.UserClaim
     token, err := jwt.ParseWithClaims(tokenStr, &userClaim, func(token *jwt.Token) (any, error) {
       return variable.JWTEncryptKey, nil
     })

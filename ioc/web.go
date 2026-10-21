@@ -18,7 +18,7 @@ func InitGin(middles []gin.HandlerFunc, handler *web.UserHandler) *gin.Engine {
 
 func InitMiddlewares() []gin.HandlerFunc {
   return []gin.HandlerFunc{
-    middleware.NewLoginJWTMiddleBuilder().Build(), // jwt
+    middleware.NewLoginJWTMiddleBuilder().Build(),
     CORSHandler(),
   }
 }

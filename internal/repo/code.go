@@ -10,20 +10,25 @@ var (
   ErrVerifyTooMany = cache.ErrCodeVerifyTooMany
 )
 
-type CodeRepo struct {
-  cache *cache.CodeCache
+type CodeRepo interface {
+  Store(ctx context.Context, biz, phone, code string) error
+  Verify(ctx context.Context, biz, phone, code string) (bool, error)
 }
 
-func NewCodeRepo(c *cache.CodeCache) *CodeRepo {
-  return &CodeRepo{
+type CacheCodeRepo struct {
+  cache cache.CodeCache
+}
+
+func NewCodeRepo(c cache.CodeCache) CodeRepo {
+  return &CacheCodeRepo{
     cache: c,
   }
 }
 
-func (repo *CodeRepo) Store(ctx context.Context, biz, phone, code string) error {
+func (repo *CacheCodeRepo) Store(ctx context.Context, biz, phone, code string) error {
   return repo.cache.Set(ctx, biz, phone, code)
 }
 
-func (repo *CodeRepo) Verify(ctx context.Context, biz, phone, code string) (bool, error) {
+func (repo *CacheCodeRepo) Verify(ctx context.Context, biz, phone, code string) (bool, error) {
   return repo.cache.Verify(ctx, biz, phone, code)
 }

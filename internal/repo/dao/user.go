@@ -16,17 +16,25 @@ var (
   ErrUserNotFound  = gorm.ErrRecordNotFound
 )
 
-type UserDAO struct {
+type UserDAO interface {
+  Insert(ctx context.Context, u User) error
+  FindByEmail(ctx context.Context, email string) (User, error)
+  FindByPhone(ctx context.Context, phone string) (User, error)
+  FindById(ctx context.Context, id int64) (User, error)
+  Update(ctx context.Context, user domain.User) (User, error)
+}
+
+type GORMUserDAO struct {
   db *gorm.DB
 }
 
-func NewUserDAO(db *gorm.DB) *UserDAO {
-  return &UserDAO{
+func NewUserDAO(db *gorm.DB) UserDAO {
+  return &GORMUserDAO{
     db: db,
   }
 }
 
-func (dao *UserDAO) Insert(ctx context.Context, u User) error {
+func (dao *GORMUserDAO) Insert(ctx context.Context, u User) error {
   // WithContext 用来保持链路
   err := dao.db.WithContext(ctx).Create(&u).Error
   // 类型断言是mysql错误
@@ -49,25 +57,25 @@ func (dao *UserDAO) Insert(ctx context.Context, u User) error {
   return nil
 }
 
-func (dao *UserDAO) FindByEmail(ctx context.Context, email string) (User, error) {
+func (dao *GORMUserDAO) FindByEmail(ctx context.Context, email string) (User, error) {
   var u User
   err := dao.db.WithContext(ctx).Where("email = ?", email).First(&u).Error
   return u, err
 }
 
-func (dao *UserDAO) FindByPhone(ctx context.Context, phone string) (User, error) {
+func (dao *GORMUserDAO) FindByPhone(ctx context.Context, phone string) (User, error) {
   var u User
   err := dao.db.WithContext(ctx).Where("phone = ?", phone).First(&u).Error
   return u, err
 }
 
-func (dao *UserDAO) FindById(ctx context.Context, id int64) (User, error) {
+func (dao *GORMUserDAO) FindById(ctx context.Context, id int64) (User, error) {
   var u User
   err := dao.db.WithContext(ctx).Where("id = ?", id).First(&u).Error
   return u, err
 }
 
-func (dao *UserDAO) Update(ctx context.Context, user domain.User) (User, error) {
+func (dao *GORMUserDAO) Update(ctx context.Context, user domain.User) (User, error) {
   u, err := dao.FindById(ctx, user.Id)
   if err != nil {
     return User{}, err

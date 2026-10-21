@@ -28,15 +28,21 @@ type UserMiddleCache struct {
 
 // 较弱实现
 
-type UserCache struct {
+type UserCache interface {
+  Get(ctx context.Context, id int64) (domain.User, error)
+  Set(ctx context.Context, u domain.User) error
+  Key(id int64) string
+}
+
+type RedisUserCache struct {
   // 面向redis接口，不区分redis类型（单机/集群）
   client     redis.Cmdable
   expiration time.Duration // cache 过期时间
 }
 
-func NewUserCache(client redis.Cmdable) *UserCache {
+func NewUserCache(client redis.Cmdable) UserCache {
   // 外部注入 redis 客户端连接
-  return &UserCache{
+  return &RedisUserCache{
     client:     client,
     expiration: time.Minute * 10,
   }
@@ -44,7 +50,7 @@ func NewUserCache(client redis.Cmdable) *UserCache {
 
 // 如果有数据，err是nil
 // 如果没数据，返回特定 err
-func (cache *UserCache) Get(ctx context.Context, id int64) (domain.User, error) {
+func (cache *RedisUserCache) Get(ctx context.Context, id int64) (domain.User, error) {
   key := cache.Key(id)
   // 数据不存在，err == ErrUserNotFound，返回上级
   val, err := cache.client.Get(ctx, key).Bytes()
@@ -56,7 +62,7 @@ func (cache *UserCache) Get(ctx context.Context, id int64) (domain.User, error) 
   return u, err
 }
 
-func (cache *UserCache) Set(ctx context.Context, u domain.User) error {
+func (cache *RedisUserCache) Set(ctx context.Context, u domain.User) error {
   val, err := json.Marshal(u)
   if err != nil {
     return err
@@ -65,6 +71,6 @@ func (cache *UserCache) Set(ctx context.Context, u domain.User) error {
   return cache.client.Set(ctx, key, val, cache.expiration).Err()
 }
 
-func (cache *UserCache) Key(id int64) string {
+func (cache *RedisUserCache) Key(id int64) string {
   return fmt.Sprint("user:info:", id)
 }

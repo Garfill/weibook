@@ -28,13 +28,26 @@ var (
 // 1. 分布式锁：性能差，难用
 // 2. redis内使用lua脚本：redis是单线程
 
-type CodeService struct {
-  repo *repo.CodeRepo
+type CodeService interface {
+  Send(ctx context.Context, biz string, phone string) error
+  Verify(ctx context.Context, biz string, code string, phone string) (bool, error)
+  generateCode() string
+}
+
+type CodeSvc struct {
+  repo repo.CodeRepo
   sms  sms.Service
 }
 
+func NewCodeService(repo repo.CodeRepo, sms sms.Service) CodeService {
+  return &CodeSvc{
+    repo: repo,
+    sms:  sms,
+  }
+}
+
 // 发验证码
-func (svc *CodeService) Send(
+func (svc *CodeSvc) Send(
   ctx context.Context,
   biz string, // 不同业务场景 biz 不一样（登录/更改密码等）
   phone string,
@@ -59,7 +72,7 @@ func (svc *CodeService) Send(
 }
 
 // 校验验证码
-func (svc *CodeService) Verify(
+func (svc *CodeSvc) Verify(
   ctx context.Context,
   biz string, // 不同业务场景 biz 不一样（登录/更改密码等）
   code string,
@@ -68,16 +81,9 @@ func (svc *CodeService) Verify(
   return svc.repo.Verify(ctx, biz, phone, code)
 }
 
-func (svc *CodeService) generateCode() string {
+func (svc *CodeSvc) generateCode() string {
   // 0 - 999999随机
   num := rand.Intn(1000000)
   // 不够6位数的前面补充0
   return fmt.Sprintf("%06d", num)
-}
-
-func NewCodeService(repo *repo.CodeRepo, sms sms.Service) *CodeService {
-  return &CodeService{
-    repo: repo,
-    sms:  sms,
-  }
 }

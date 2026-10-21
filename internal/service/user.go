@@ -9,10 +9,6 @@ import (
   "golang.org/x/crypto/bcrypt"
 )
 
-type UserService struct {
-  repo *repo.UserRepo
-}
-
 var (
   ErrDuplicateUser    = repo.ErrDuplicateUser
   ErrInvalidUserOrPwd = errors.New("帐号或者密码错误")
@@ -20,11 +16,23 @@ var (
   ErrOperateFail      = repo.ErrOperateFail
 )
 
-func NewUserService(repo *repo.UserRepo) *UserService {
-  return &UserService{repo: repo}
+type UserService interface {
+  SignUp(ctx context.Context, user domain.User) error
+  Login(ctx context.Context, email string, password string) (domain.User, error)
+  FindById(ctx context.Context, id int64) (domain.User, error)
+  FindOrCreate(ctx context.Context, phone string) (domain.User, error)
+  UpdateProfile(ctx context.Context, profile domain.User) (domain.User, error)
 }
 
-func (svc *UserService) SignUp(ctx context.Context, user domain.User) error {
+type UserSvc struct {
+  repo repo.UserRepo
+}
+
+func NewUserService(repo repo.UserRepo) UserService {
+  return &UserSvc{repo: repo}
+}
+
+func (svc *UserSvc) SignUp(ctx context.Context, user domain.User) error {
   // 1. context 是为了保持连续性和链路控制
   // 2. 使用实体 user 而不使用指针，可以不写 user == nil 判空（但是会触发复制 user）
   // 3. 实体 user 有利于分配到栈，不会内存逃逸
@@ -38,7 +46,7 @@ func (svc *UserService) SignUp(ctx context.Context, user domain.User) error {
   return svc.repo.CreateUser(ctx, user)
 }
 
-func (svc *UserService) Login(ctx context.Context, email string, password string) (domain.User, error) {
+func (svc *UserSvc) Login(ctx context.Context, email string, password string) (domain.User, error) {
   // 查找用户
   u, err := svc.repo.FindByEmail(ctx, email)
   if errors.Is(err, repo.ErrUserNotFound) {
@@ -57,7 +65,7 @@ func (svc *UserService) Login(ctx context.Context, email string, password string
   return u, nil
 }
 
-func (svc *UserService) FindById(ctx context.Context, id int64) (domain.User, error) {
+func (svc *UserSvc) FindById(ctx context.Context, id int64) (domain.User, error) {
   user, err := svc.repo.FindById(ctx, id)
   if errors.Is(err, repo.ErrUserNotFound) {
     return domain.User{}, ErrRecordNoFound
@@ -68,7 +76,7 @@ func (svc *UserService) FindById(ctx context.Context, id int64) (domain.User, er
 // 1. 查询手机
 // 2. 否则注册用户，成功则返回
 // 3. 否则（遇到并发问题），查询返回
-func (svc *UserService) FindOrCreate(ctx context.Context, phone string) (domain.User, error) {
+func (svc *UserSvc) FindOrCreate(ctx context.Context, phone string) (domain.User, error) {
   // 手机号没找到用户
   u, err := svc.repo.FindByPhone(ctx, phone)
   if err != repo.ErrUserNotFound {
@@ -90,7 +98,7 @@ func (svc *UserService) FindOrCreate(ctx context.Context, phone string) (domain.
   return svc.repo.FindByPhone(ctx, phone)
 }
 
-func (svc *UserService) UpdateProfile(ctx context.Context, profile domain.User) (domain.User, error) {
+func (svc *UserSvc) UpdateProfile(ctx context.Context, profile domain.User) (domain.User, error) {
   return svc.repo.Update(ctx, profile)
 }
 

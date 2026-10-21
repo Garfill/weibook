@@ -18,8 +18,8 @@ import (
 )
 
 type UserHandler struct {
-  svc            *service.UserService
-  codeSvc        *service.CodeService
+  svc            service.UserService
+  codeSvc        service.CodeService
   passwordRegexp *regexp.Regexp
   emailRegexp    *regexp.Regexp
   idRegexp       *regexp.Regexp
@@ -33,7 +33,7 @@ var (
   ErrBadRegExp     = errors.New("内部正则错误")
 )
 
-func NewUserHandler(svc *service.UserService, codeSvc *service.CodeService) *UserHandler {
+func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
   // 限制 8-50 长度的密码，防止加密算法不支持
   const passwordExp = `^(?=.*[a-z])(?=.*[A-Z])(?=.*[\d])[~!@#$%^&a-zA-Z\d]{8,50}$`
   const emailExp = `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`

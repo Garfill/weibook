@@ -128,6 +128,6 @@ func (repo *CacheUserRepo) entityToDomain(ud dao.User) domain.User {
     Email:    ud.Email.String,
     Phone:    ud.Phone.String,
     Password: ud.Password,
-    Birthday: time.UnixMilli(ud.Birthday),
+    Birthday: time.UnixMilli(ud.Birthday).In(time.Local),
   }
 }

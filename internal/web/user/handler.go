@@ -163,7 +163,7 @@ func (u *UserHandler) Login(ctx *gin.Context) {
   // 登录成功返回用户数据
   ctx.JSON(http.StatusOK, gin.H{
     "msg":     "登录成功",
-    "profile": parseUser(user),
+    "profile": formatUserProfile(user),
   })
   return
 }
@@ -216,7 +216,8 @@ func (u *UserHandler) Edit(ctx *gin.Context) {
     ctx.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误"})
     return
   }
-  date, err := time.Parse(time.DateOnly, req.Birthday)
+  // 如果格式转换成功则视为格式没问题 yyyy-mm-dd
+  date, err := time.ParseInLocation(time.DateOnly, req.Birthday, time.Local)
   if err != nil {
     ctx.JSON(http.StatusBadRequest, gin.H{"error": "请输入正确格式日期"})
     return
@@ -234,7 +235,7 @@ func (u *UserHandler) Edit(ctx *gin.Context) {
     Birthday string
   }
   ctx.JSON(http.StatusOK, gin.H{
-    "profile": parseUser(user),
+    "profile": formatUserProfile(user),
   })
   return
 }
@@ -271,7 +272,7 @@ func (u *UserHandler) Profile(ctx *gin.Context) {
   }
 
   ctx.JSON(http.StatusOK, gin.H{
-    "profile": parseUser(user),
+    "profile": formatUserProfile(user),
   })
 }
 
@@ -296,7 +297,7 @@ func (u *UserHandler) ProfileByJwt(ctx *gin.Context) {
   }
 
   ctx.JSON(http.StatusOK, gin.H{
-    "profile": parseUser(user),
+    "profile": formatUserProfile(user),
   })
 }
 
@@ -443,7 +444,7 @@ type User struct {
   Birthday string
 }
 
-func parseUser(user domain.User) User {
+func formatUserProfile(user domain.User) User {
   return User{
     Id:       user.Id,
     Name:     user.Name,

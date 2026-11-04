@@ -33,9 +33,9 @@ var (
   ErrBadRegExp     = errors.New("内部正则错误")
 )
 
-func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
+func NewUserHandler(userSvc service.UserService, codeSvc service.CodeService) *UserHandler {
   // 限制 8-50 长度的密码，防止加密算法不支持
-  const passwordExp = `^(?=.*[a-z])(?=.*[A-Z])(?=.*[\d])[~!@#$%^&a-zA-Z\d]{8,50}$`
+  const passwordExp = `^(?=.*[a-z])(?=.*[\d])[~!@#$%^&a-zA-Z\d]{8,50}$`
   const emailExp = `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
   const idExp = `^[0-9]+$`
   const phoneExp = `^1\d{10}`
@@ -44,7 +44,7 @@ func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserH
     emailRegexp:    regexp.MustCompile(emailExp, 0),
     idRegexp:       regexp.MustCompile(idExp, 0),
     phoneExp:       regexp.MustCompile(phoneExp, 0),
-    svc:            svc,
+    svc:            userSvc,
     codeSvc:        codeSvc,
   }
 }
@@ -82,7 +82,7 @@ func (u *UserHandler) Register(ctx *gin.Context) {
     return
   }
   if !ok {
-    ctx.JSON(http.StatusBadRequest, gin.H{"error": "请输入正确格式密码"})
+    ctx.JSON(http.StatusBadRequest, gin.H{"error": "密码格式错误"})
     return
   }
 
@@ -111,7 +111,7 @@ func (u *UserHandler) Register(ctx *gin.Context) {
   }
 
   if err != nil {
-    ctx.JSON(http.StatusOK, gin.H{"error": "系统错误"})
+    ctx.JSON(http.StatusInternalServerError, gin.H{"error": "系统错误"})
     return
   }
 

@@ -10,7 +10,9 @@ import (
 
 func InitDB() *gorm.DB {
   // 初始化mysql连接
-  db, err := gorm.Open(mysql.Open(config.Config.Mysql.DSN), &gorm.Config{})
+  db, err := gorm.Open(mysql.Open(config.Config.Mysql.DSN), &gorm.Config{
+
+  })
   if err != nil {
     // panic 会令整个 goroutine 结束
     panic("failed to connect database")

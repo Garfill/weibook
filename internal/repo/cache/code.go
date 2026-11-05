@@ -59,7 +59,7 @@ func (c *RedisCodeCache) Verify(ctx context.Context, biz, phone, code string) (b
   res, err := c.client.Eval(ctx, luaVerifyCode, []string{c.Key(biz, phone)}, code).Int()
   if err != nil {
     return false, err
-  }
+  } // redis 错误
   switch res {
   case 0:
     return true, nil

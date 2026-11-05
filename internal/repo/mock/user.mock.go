@@ -13,7 +13,6 @@ import (
 	context "context"
 	reflect "reflect"
 	domain "weibook/internal/domain"
-	dao "weibook/internal/repo/dao"
 
 	gomock "go.uber.org/mock/gomock"
 )
@@ -114,32 +113,4 @@ func (m *MockUserRepo) Update(ctx context.Context, profile domain.User) (domain.
 func (mr *MockUserRepoMockRecorder) Update(ctx, profile any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUserRepo)(nil).Update), ctx, profile)
-}
-
-// domainToEntity mocks base method.
-func (m *MockUserRepo) domainToEntity(u domain.User) dao.User {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "domainToEntity", u)
-	ret0, _ := ret[0].(dao.User)
-	return ret0
-}
-
-// domainToEntity indicates an expected call of domainToEntity.
-func (mr *MockUserRepoMockRecorder) domainToEntity(u any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "domainToEntity", reflect.TypeOf((*MockUserRepo)(nil).domainToEntity), u)
-}
-
-// entityToDomain mocks base method.
-func (m *MockUserRepo) entityToDomain(ud dao.User) domain.User {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "entityToDomain", ud)
-	ret0, _ := ret[0].(domain.User)
-	return ret0
-}
-
-// entityToDomain indicates an expected call of entityToDomain.
-func (mr *MockUserRepoMockRecorder) entityToDomain(ud any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "entityToDomain", reflect.TypeOf((*MockUserRepo)(nil).entityToDomain), ud)
 }

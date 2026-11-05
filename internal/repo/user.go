@@ -22,8 +22,6 @@ type UserRepo interface {
   FindByPhone(ctx context.Context, phone string) (domain.User, error)
   FindById(ctx context.Context, id int64) (domain.User, error)
   Update(ctx context.Context, profile domain.User) (domain.User, error)
-  domainToEntity(u domain.User) dao.User
-  entityToDomain(ud dao.User) domain.User
 }
 
 type CacheUserRepo struct {

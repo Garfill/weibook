@@ -4,8 +4,8 @@ local code = redis.call("get", key)
 local cntKey = key..":cnt"
 local cnt = tonumber(redis.call("get", key..":cnt"))
 
-if cnt <= 0 then
-    --  一直输错
+if cnt == nil or  cnt <= 0 then
+    -- redis没有这个值 或者 一直输错
     -- 或者已经用过
     return -1
 elseif val == code then

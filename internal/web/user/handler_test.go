@@ -3,7 +3,6 @@ package web
 import (
   "bytes"
   "context"
-  "encoding/json"
   "errors"
   "net/http"
   "net/http/httptest"
@@ -13,6 +12,7 @@ import (
   svcmocks "weibook/internal/service/mock"
 
   "github.com/gin-gonic/gin"
+  "github.com/goccy/go-json"
   "github.com/stretchr/testify/assert"
   "github.com/stretchr/testify/require"
   "go.uber.org/mock/gomock"
@@ -155,7 +155,8 @@ func TestUserHandler_Register(t *testing.T) {
           Error string `json:"error"`
         }
         var result Res
-        json.Unmarshal(resp.Body.Bytes(), &result)
+        //json.Unmarshal(resp.Body.Bytes(), &result) // 这种写法会读取两次 resp.body
+        json.NewDecoder(resp.Body).Decode(&result) // 这种会直接使用body，不用多次读取
         assert.Equal(t, tc.errorMsg, result.Error)
       }
 

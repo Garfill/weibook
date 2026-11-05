@@ -6,10 +6,6 @@ import (
   "github.com/gin-contrib/sessions"
   sessionRedis "github.com/gin-contrib/sessions/redis"
   "github.com/gin-gonic/gin"
-  "github.com/redis/go-redis/v9"
-  "github.com/ulule/limiter/v3"
-  limiterGin "github.com/ulule/limiter/v3/drivers/middleware/gin"
-  limiterRedis "github.com/ulule/limiter/v3/drivers/store/redis"
 )
 
 func main() {
@@ -17,7 +13,6 @@ func main() {
   server := InitializeApp()
   // session
   initSession(server)
-  initRateLimit(server)
 
   //server.GET("/hello", func(context *gin.Context) {
   //  context.JSON(200, gin.H{
@@ -53,23 +48,4 @@ func initSession(server *gin.Engine) {
   // 自定义中间件
   //server.Use(middleware.NewLoginMiddleBuilder().Build())
   //server.Use(middleware.NewLoginJWTMiddleBuilder().Build())
-}
-
-func initRateLimit(server *gin.Engine) {
-  // 限流
-  rate, err := limiter.NewRateFromFormatted("100-S")
-  if err != nil {
-    panic("Failed to initialize rate limiter")
-  }
-  client := redis.NewClient(&redis.Options{
-    Addr: config.Config.Redis.Addr,
-  })
-  store, err := limiterRedis.NewStoreWithOptions(client, limiter.StoreOptions{
-    Prefix: "limiter_prefix_",
-  })
-  if err != nil {
-    panic("Failed to initialize limit store")
-  }
-  mw := limiterGin.NewMiddleware(limiter.New(store, rate))
-  server.Use(mw)
 }

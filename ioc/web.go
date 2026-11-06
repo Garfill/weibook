@@ -8,9 +8,6 @@ import (
   "github.com/gin-contrib/cors"
   "github.com/gin-gonic/gin"
   "github.com/redis/go-redis/v9"
-  "github.com/ulule/limiter/v3"
-  limiterGin "github.com/ulule/limiter/v3/drivers/middleware/gin"
-  limiterRedis "github.com/ulule/limiter/v3/drivers/store/redis"
 )
 
 func InitGin(middles []gin.HandlerFunc, handler *web.UserHandler) *gin.Engine {
@@ -20,11 +17,11 @@ func InitGin(middles []gin.HandlerFunc, handler *web.UserHandler) *gin.Engine {
   return server
 }
 
-func InitMiddlewares(redis redis.Cmdable) []gin.HandlerFunc {
+func InitMiddlewares(rdb redis.Cmdable) []gin.HandlerFunc {
   return []gin.HandlerFunc{
-    middleware.NewLoginJWTMiddleBuilder().Build(),
     CORSHandler(),
-    initRateLimit(redis),
+    middleware.NewRateLimiter(rdb).Build(),
+    middleware.NewLoginJWTMiddleBuilder().Build(),
   }
 }
 
@@ -41,21 +38,4 @@ func CORSHandler() gin.HandlerFunc {
     //},
     MaxAge: 12 * time.Hour,
   })
-}
-
-func initRateLimit(redisCmd redis.Cmdable) gin.HandlerFunc {
-  // 限流
-  rate, err := limiter.NewRateFromFormatted("100-S")
-  if err != nil {
-    panic("Failed to initialize rate limiter")
-  }
-  client := redisCmd.(*redis.Client)
-  store, err := limiterRedis.NewStoreWithOptions(client, limiter.StoreOptions{
-    Prefix: "limiter_prefix_",
-  })
-  if err != nil {
-    panic("Failed to initialize limit store")
-  }
-  mw := limiterGin.NewMiddleware(limiter.New(store, rate))
-  return mw
 }

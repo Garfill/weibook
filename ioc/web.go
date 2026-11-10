@@ -2,7 +2,7 @@ package ioc
 
 import (
   "time"
-  "weibook/internal/web/middleware"
+  middleware2 "weibook/internal/middleware"
   web "weibook/internal/web/user"
 
   "github.com/gin-contrib/cors"
@@ -20,8 +20,8 @@ func InitGin(middles []gin.HandlerFunc, handler *web.UserHandler) *gin.Engine {
 func InitMiddlewares(rdb redis.Cmdable) []gin.HandlerFunc {
   return []gin.HandlerFunc{
     CORSHandler(),
-    middleware.NewRateLimiter(rdb).Build(),
-    middleware.NewLoginJWTMiddleBuilder().Build(),
+    middleware2.NewRateLimiter(rdb).Build(),
+    middleware2.NewLoginJWTMiddleBuilder().Build(),
   }
 }
 

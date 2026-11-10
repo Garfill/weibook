@@ -17,17 +17,6 @@ type Service struct {
 
 // 后期通过 test 单元测试
 func (s *Service) Send(ctx context.Context, tpl string, args []string, numbers ...string) error {
-  limited, err := s.limiter.Limited(ctx, "tencent:sms")
-  if err != nil {
-    // 系统错误
-    // 可以限流：保守策略，下游系统不给力
-    //  不限流：容错，业务可用性要求很高的时候不限流
-    return fmt.Errorf("短信限流错误，%w", err)
-  }
-  if limited {
-    // 限流了
-    return fmt.Errorf("触发限流")
-  }
   req := tSms.NewSendSmsRequest()
   req.SmsSdkAppId = s.appId
   req.SignName = s.signName

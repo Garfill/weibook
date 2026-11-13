@@ -3,7 +3,6 @@ package tencent
 import (
   "context"
   "fmt"
-  "weibook/internal/rateLimit"
 
   tSms "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sms/v20210111"
 )
@@ -12,7 +11,6 @@ type Service struct {
   appId    *string
   signName *string
   client   *tSms.Client
-  limiter  rateLimit.Limiter
 }
 
 // 后期通过 test 单元测试

@@ -2,26 +2,28 @@ package ioc
 
 import (
   "time"
-  middleware2 "weibook/internal/middleware"
-  web "weibook/internal/web/user"
+  "weibook/internal/middleware"
+  "weibook/internal/web/user"
+  "weibook/internal/web/wechat"
 
   "github.com/gin-contrib/cors"
   "github.com/gin-gonic/gin"
   "github.com/redis/go-redis/v9"
 )
 
-func InitGin(middles []gin.HandlerFunc, handler *web.UserHandler) *gin.Engine {
+func InitGin(middles []gin.HandlerFunc, userHdl *user.UserHandler, wechatHdl *wechat.OAuth2WechatHandler) *gin.Engine {
   server := gin.Default()
   server.Use(middles...)
-  handler.RegisterRoutes(server)
+  userHdl.RegisterRoutes(server)
+  wechatHdl.RegisterRoutes(server)
   return server
 }
 
 func InitMiddlewares(rdb redis.Cmdable) []gin.HandlerFunc {
   return []gin.HandlerFunc{
     CORSHandler(),
-    middleware2.NewRateLimiter(rdb).Build(),
-    middleware2.NewLoginJWTMiddleBuilder().Build(),
+    middleware.NewRateLimiter(rdb).Build(),
+    middleware.NewLoginJWTMiddleBuilder().Build(),
   }
 }
 

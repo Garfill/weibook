@@ -22,6 +22,7 @@ type UserService interface {
   FindById(ctx context.Context, id int64) (domain.User, error)
   FindOrCreate(ctx context.Context, phone string) (domain.User, error)
   UpdateProfile(ctx context.Context, profile domain.User) (domain.User, error)
+  FindOrCreateByWechat(ctx context.Context, info domain.WechatInfo) (domain.User, error)
 }
 
 type UserSvc struct {
@@ -96,6 +97,27 @@ func (svc *UserSvc) FindOrCreate(ctx context.Context, phone string) (domain.User
   // 创建后重新查找库里面的数据
   // tips 有可能遇到主从延迟问题，如果遇到，createUser 返回新生成的id（int64）
   return svc.repo.FindByPhone(ctx, phone)
+}
+
+func (svc *UserSvc) FindOrCreateByWechat(ctx context.Context, info domain.WechatInfo) (domain.User, error) {
+  // 没找到用户
+  u, err := svc.repo.FindByWechat(ctx, info.UnionId)
+  if err != repo.ErrUserNotFound {
+    // err = nil
+    // err = 其他错误
+    return u, err
+  }
+  u = domain.User{
+    WechatInfo: info,
+  }
+  err = svc.repo.CreateUser(ctx, u)
+  if err != nil && err != repo.ErrDuplicateUser {
+    // 创建失败，但是不是手机冲突，属于系统错误
+    return domain.User{}, err
+  }
+  // 创建后重新查找库里面的数据
+  // tips 有可能遇到主从延迟问题，如果遇到，createUser 返回新生成的id（int64）
+  return svc.repo.FindByWechat(ctx, info.UnionId)
 }
 
 func (svc *UserSvc) UpdateProfile(ctx context.Context, profile domain.User) (domain.User, error) {

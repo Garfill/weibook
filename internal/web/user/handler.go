@@ -1,4 +1,4 @@
-package web
+package user
 
 import (
   "errors"
@@ -8,13 +8,11 @@ import (
   "time"
   "weibook/internal/domain"
   "weibook/internal/service"
-  "weibook/internal/variable"
   "weibook/internal/web"
 
   regexp "github.com/dlclark/regexp2"
   "github.com/gin-contrib/sessions"
   "github.com/gin-gonic/gin"
-  "github.com/golang-jwt/jwt/v5"
 )
 
 type UserHandler struct {
@@ -24,6 +22,7 @@ type UserHandler struct {
   emailRegexp    *regexp.Regexp
   idRegexp       *regexp.Regexp
   phoneExp       *regexp.Regexp
+  web.JwtHandler
 }
 
 const biz = "login"
@@ -154,7 +153,7 @@ func (u *UserHandler) Login(ctx *gin.Context) {
   // JWT 版本
   // 1. 初始化jwt，带数据，不带入敏感数据（密码）
   // token := jwt.New(jwt.SigningMethodHS256)
-  err = u.setJWTToken(ctx, user)
+  err = u.JwtHandler.SetJwtToken(ctx, user.Id)
   if err != nil {
     ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "token生成错误"})
     return
@@ -166,27 +165,6 @@ func (u *UserHandler) Login(ctx *gin.Context) {
     "profile": formatUserProfile(user),
   })
   return
-}
-
-func (u *UserHandler) setJWTToken(ctx *gin.Context, user domain.User) error {
-  userClaim := UserClaim{
-    Uid: user.Id,
-    RegisteredClaims: jwt.RegisteredClaims{
-      // jwt 过期时间
-      // 60m 过期
-      ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 60)),
-    },
-    UserAgent: ctx.Request.UserAgent(), // ua 用来判断是否异地登录
-  }
-
-  token := jwt.NewWithClaims(jwt.SigningMethodHS256, userClaim)
-  // 2. 加签，返回token字符
-  tokenStr, err := token.SignedString(variable.JWTEncryptKey)
-  if err != nil {
-    return err
-  }
-  ctx.Header("x-jwt-token", tokenStr) // 返回前端存储，下次请求通过请求头带上来
-  return nil
 }
 
 func (u *UserHandler) Logout(ctx *gin.Context) {
@@ -284,7 +262,7 @@ func (u *UserHandler) ProfileByJwt(ctx *gin.Context) {
     ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "系统错误"})
     return
   }
-  uc, ok := userInfo.(UserClaim)
+  uc, ok := userInfo.(web.UserClaim)
   if !ok {
     // 断言失败
     ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "系统错误"})
@@ -308,7 +286,7 @@ func (u *UserHandler) LoginSMS(ctx *gin.Context) {
   }
   var req Req
   if err := ctx.ShouldBind(&req); err != nil {
-    ctx.JSON(http.StatusOK, res.Result{
+    ctx.JSON(http.StatusOK, web.Result{
       Code: 4,
       Msg:  "请输入正确的手机号/验证码",
     })
@@ -317,14 +295,14 @@ func (u *UserHandler) LoginSMS(ctx *gin.Context) {
   // todo 手机号校验
   ok, err := u.codeSvc.Verify(ctx, biz, req.Code, req.Phone)
   if err != nil {
-    ctx.JSON(http.StatusOK, res.Result{
+    ctx.JSON(http.StatusOK, web.Result{
       Code: 5,
       Msg:  "系统错误",
     })
     return
   }
   if !ok {
-    ctx.JSON(http.StatusOK, res.Result{
+    ctx.JSON(http.StatusOK, web.Result{
       Code: 4,
       Msg:  "请输入正确的手机号/验证码",
     })
@@ -335,7 +313,7 @@ func (u *UserHandler) LoginSMS(ctx *gin.Context) {
   // 有可能是新用户，通过手机号注册
   user, err := u.svc.FindOrCreate(ctx, req.Phone)
   if err != nil {
-    ctx.JSON(http.StatusOK, res.Result{
+    ctx.JSON(http.StatusOK, web.Result{
       Code: 5,
       Msg:  "系统错误",
     })
@@ -343,9 +321,9 @@ func (u *UserHandler) LoginSMS(ctx *gin.Context) {
   }
 
   // 创建新的用户，设置 jwt 登录状态
-  err = u.setJWTToken(ctx, user)
+  err = u.JwtHandler.SetJwtToken(ctx, user.Id)
   if err != nil {
-    ctx.JSON(http.StatusOK, res.Result{
+    ctx.JSON(http.StatusOK, web.Result{
       Code: 5,
       Msg:  "系统错误",
     })
@@ -353,7 +331,7 @@ func (u *UserHandler) LoginSMS(ctx *gin.Context) {
   }
 
   // 登录成功
-  ctx.JSON(http.StatusOK, res.Result{
+  ctx.JSON(http.StatusOK, web.Result{
     Code: 0,
     Msg:  "验证码校验成功",
   })
@@ -366,7 +344,7 @@ func (u *UserHandler) SendLoginSMSCode(ctx *gin.Context) {
   }
   var req Req
   if err := ctx.ShouldBindJSON(&req); err != nil {
-    ctx.JSON(http.StatusBadRequest, res.Result{
+    ctx.JSON(http.StatusBadRequest, web.Result{
       Code: 4,
       Msg:  "请输入正确的手机号/验证码",
     })
@@ -378,7 +356,7 @@ func (u *UserHandler) SendLoginSMSCode(ctx *gin.Context) {
     return
   }
   if !ok {
-    ctx.JSON(http.StatusBadRequest, res.Result{
+    ctx.JSON(http.StatusBadRequest, web.Result{
       Code: 4,
       Msg:  "请输入正确的手机号/验证码",
     })
@@ -387,15 +365,15 @@ func (u *UserHandler) SendLoginSMSCode(ctx *gin.Context) {
   err = u.codeSvc.Send(ctx, biz, req.Phone)
   switch err {
   case nil:
-    ctx.JSON(http.StatusOK, res.Result{
+    ctx.JSON(http.StatusOK, web.Result{
       Msg: "发送成功",
     })
   case service.ErrCodeSendTooMany:
-    ctx.JSON(http.StatusOK, res.Result{
+    ctx.JSON(http.StatusOK, web.Result{
       Msg: "发送太频繁",
     })
   default:
-    ctx.JSON(http.StatusOK, res.Result{
+    ctx.JSON(http.StatusOK, web.Result{
       Msg: "系统错误",
     })
     return
@@ -412,7 +390,7 @@ func (u *UserHandler) VerifyLoginSMSCode(ctx *gin.Context) {
   }
   var req Req
   if err := ctx.ShouldBind(&req); err != nil {
-    ctx.JSON(http.StatusBadRequest, res.Result{
+    ctx.JSON(http.StatusBadRequest, web.Result{
       Code: 4,
       Msg:  "请输入正确的手机号/验证码",
     })
@@ -420,14 +398,14 @@ func (u *UserHandler) VerifyLoginSMSCode(ctx *gin.Context) {
   }
   valid, err := u.codeSvc.Verify(ctx, biz, req.Code, req.Phone)
   if err != nil {
-    ctx.JSON(http.StatusOK, res.Result{
+    ctx.JSON(http.StatusOK, web.Result{
       Code: 5,
       Msg:  "系统错误",
     })
     return
   }
   if !valid {
-    ctx.JSON(http.StatusBadRequest, res.Result{
+    ctx.JSON(http.StatusBadRequest, web.Result{
       Code: 4,
       Msg:  "请输入正确的手机号/验证码",
     })
@@ -451,11 +429,4 @@ func formatUserProfile(user domain.User) User {
     Email:    user.Email,
     Birthday: user.Birthday.Format(time.DateOnly),
   }
-}
-
-// jwt 中 用户信息的 声明
-type UserClaim struct {
-  jwt.RegisteredClaims
-  Uid       int64
-  UserAgent string
 }

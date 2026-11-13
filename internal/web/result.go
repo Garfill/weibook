@@ -1,4 +1,4 @@
-package res
+package web
 
 // 通用返回结果包装
 // Code 业务码

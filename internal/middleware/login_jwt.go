@@ -17,7 +17,14 @@ type LoginJWTMiddleWareBuilder struct {
 
 func NewLoginJWTMiddleBuilder() *LoginJWTMiddleWareBuilder {
   return &LoginJWTMiddleWareBuilder{
-    whitePaths: []string{"/user/login", "/user/register", "/user/sms/login/code", "/user/sms/login/verify"},
+    whitePaths: []string{
+      "/user/login",
+      "/user/register",
+      "/user/sms/login/code",
+      "/user/sms/login/verify",
+      "/oauth2/wechat/authurl",
+      "/oauth2/wechat/callback",
+    },
   }
 }
 

@@ -7,7 +7,8 @@ import (
   "weibook/internal/repo/cache"
   "weibook/internal/repo/dao"
   "weibook/internal/service"
-  web "weibook/internal/web/user"
+  "weibook/internal/web/user"
+  "weibook/internal/web/wechat"
   "weibook/ioc"
 
   "github.com/gin-gonic/gin"
@@ -29,8 +30,10 @@ var AppSet = wire.NewSet(
   service.NewUserService,
   service.NewCodeService,
   ioc.InitSmsService,
+  ioc.InitWechatOAuth2,
   // handler
-  web.NewUserHandler,
+  user.NewUserHandler,
+  wechat.NewOAuth2WechatHandler,
   // middleware
   ioc.InitMiddlewares,
   // gin

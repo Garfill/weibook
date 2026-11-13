@@ -14,6 +14,7 @@ import (
 	"weibook/internal/repo/dao"
 	"weibook/internal/service"
 	"weibook/internal/web/user"
+	"weibook/internal/web/wechat"
 	"weibook/ioc"
 )
 
@@ -31,11 +32,13 @@ func InitializeApp() *gin.Engine {
 	codeRepo := repo.NewCodeRepo(codeCache)
 	smsService := ioc.InitSmsService()
 	codeService := service.NewCodeService(codeRepo, smsService)
-	userHandler := web.NewUserHandler(userService, codeService)
-	engine := ioc.InitGin(v, userHandler)
+	userHandler := user.NewUserHandler(userService, codeService)
+	serviceOauthWechatService := ioc.InitWechatOAuth2()
+	oAuth2WechatHandler := wechat.NewOAuth2WechatHandler(serviceOauthWechatService, userService)
+	engine := ioc.InitGin(v, userHandler, oAuth2WechatHandler)
 	return engine
 }
 
 // wire.go:
 
-var AppSet = wire.NewSet(ioc.InitDB, ioc.InitRedis, dao.NewUserDAO, cache.NewUserCache, cache.NewCodeCache, repo.NewUserRepo, repo.NewCodeRepo, service.NewUserService, service.NewCodeService, ioc.InitSmsService, web.NewUserHandler, ioc.InitMiddlewares, ioc.InitGin)
+var AppSet = wire.NewSet(ioc.InitDB, ioc.InitRedis, dao.NewUserDAO, cache.NewUserCache, cache.NewCodeCache, repo.NewUserRepo, repo.NewCodeRepo, service.NewUserService, service.NewCodeService, ioc.InitSmsService, ioc.InitWechatOAuth2, user.NewUserHandler, wechat.NewOAuth2WechatHandler, ioc.InitMiddlewares, ioc.InitGin)
